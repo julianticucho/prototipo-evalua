@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CumbreSegura - Prototipo App Trekking</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #0f172a, #1e293b, #090d16);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 16px;
+            color: #1e293b;
+            user-select: none;
+        }
+
+        /* Smartphone Frame Styling */
+        .phone-frame {
+            width: 390px;
+            height: 844px;
+            background: #f8fafc;
+            border-radius: 50px;
+            box-shadow: 
+                0 0 0 12px #1e293b,
+                0 0 0 15px #475569,
+                0 25px 60px -15px rgba(0, 0, 0, 0.7);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Dynamic Island / Notch */
+        .phone-notch {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 28px;
+            background: #090d16;
+            border-radius: 20px;
+            z-index: 60;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+        }
+
+        .notch-camera {
+            width: 10px;
+            height: 10px;
+            background: #1e293b;
+            border-radius: 50%;
+            box-shadow: inset 0 0 3px #3b82f6;
+        }
+
+        .notch-sensor {
+            width: 8px;
+            height: 8px;
+            background: #065f46;
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+
+        /* Custom Scrollbar inside Phone */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Map animations */
+        @keyframes pulse-pin {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.18); }
+        }
+        .pin-active {
+            animation: pulse-pin 2s infinite ease-in-out;
+        }
+
+        @keyframes radar-wave {
+            0% { transform: scale(0.8); opacity: 0.9; }
+            100% { transform: scale(2.8); opacity: 0; }
+        }
+        .emergency-wave {
+            animation: radar-wave 1.5s infinite ease-out;
+        }
+
+        /* Smooth screen transitions */
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            animation: fadeIn 0.22s ease-out;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="flex flex-col lg:flex-row items-center gap-8 max-w-6xl w-full justify-center">
+        
+        <!-- Guía lateral para el video (Opcional en escritorio, ayuda al presentador) -->
+        <div class="hidden xl:flex flex-col bg-slate-800/80 backdrop-blur-md border border-slate-700 text-slate-200 p-6 rounded-3xl w-80 shadow-xl">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="bg-emerald-500/20 text-emerald-400 p-2.5 rounded-xl">
+                    <i class="fa-solid fa-video text-lg"></i>
+                </span>
+                <div>
+                    <h2 class="font-bold text-white text-base">Guía de Grabación</h2>
+                    <p class="text-xs text-slate-400">Prototipo 100% interactivo</p>
+                </div>
+            </div>
+            <ol class="text-xs space-y-3 text-slate-300 list-decimal list-inside leading-relaxed">
+                <li><strong class="text-white">Login:</strong> Haz clic en "Iniciar Sesión" (datos pre-rellenados).</li>
+                <li><strong class="text-white">Mapa y Rutas:</strong> Toca los pines del mapa o selecciona una ruta abajo.</li>
+                <li><strong class="text-white">Mi Perfil:</strong> Botón arriba a la derecha o barra inferior. Edita datos, revisa tu XP/Historial y configura tu <span class="text-rose-400 font-semibold">Contacto de Emergencia</span> privado.</li>
+                <li><strong class="text-white">Grupos:</strong> Entra a un grupo público, solicita unirte a uno por invitación (con botón de auto-aprobar para el demo) o <span class="text-emerald-400 font-semibold">Crea un Grupo</span> nuevo.</li>
+                <li><strong class="text-white">Chat y Salida:</strong> Escribe en el chat y presiona <span class="text-amber-400 font-semibold">"Iniciar Sendero"</span>.</li>
+                <li><strong class="text-white">Tiempo Real y SOS:</strong> En el sendero activo, usa el botón de <span class="text-rose-400 font-semibold">"Simular Exceso de Tiempo Límite"</span> para disparar la alerta automática al contacto de emergencia.</li>
+            </ol>
+            <button onclick="resetPrototype()" class="mt-6 w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-left"></i> Reiniciar Demo desde Cero
+            </button>
+        </div>
+
+        <!-- MARCO DEL CELULAR -->
+        <div class="phone-frame" id="phoneFrame">
+            
+            <!-- Notch / Isla Dinámica -->
+            <div class="phone-notch">
+                <div class="notch-sensor"></div>
+                <div class="notch-camera"></div>
+            </div>
+
+            <!-- Barra de Estado (iOS/Android style) -->
+            <div class="h-11 px-7 pt-2 flex items-center justify-between text-xs font-semibold z-50 select-none transition-colors duration-300" id="statusBar">
+                <span id="statusClock">09:41</span>
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-signal text-[10px]"></i>
+                    <i class="fa-solid fa-wifi text-[10px]"></i>
+                    <i class="fa-solid fa-battery-full text-sm"></i>
+                </div>
+            </div>
+
+            <!-- Toast Notification Flotante -->
+            <div id="toast" class="
+                absolute top-14 left-1/2 -translate-x-1/2 z-50 
+                bg-slate-900/95 text-white text-xs font-medium px-4 py-2.5 rounded-2xl shadow-lg 
+                flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none w-[88%]
+            ">
+                <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+                <span id="toastMsg">Acción completada</span>
+            </div>
+
+            <!-- ==========================================
+                 PANTALLA 1: LOGIN
+                 ========================================== -->
+            <div id="screen-login" class="screen active relative bg-slate-900 text-white justify-between p-7 pt-10">
+                <!-- Fondo decorativo de montaña -->
+                <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-35">
+                    <svg viewBox="0 0 400 800" class="w-full h-full object-cover">
+                        <defs>
+                            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#064e3b"/>
+                                <stop offset="100%" stop-color="#0f172a"/>
+                            </linearGradient>
+                        </defs>
+                        <rect width="400" height="800" fill="url(#skyGrad)"/>
+                        <circle cx="300" cy="150" r="45" fill="#10b981" opacity="0.3"/>
+                        <polygon points="-50,550 130,280 310,550" fill="#047857" opacity="0.5"/>
+                        <polygon points="100,600 280,240 460,600" fill="#065f46"/>
+                        <polygon points="-20,650 180,380 390,650" fill="#064e3b"/>
+                    </svg>
+                </div>
+
+                <!-- Header Marca -->
+                <div class="relative z-10 mt-6">
+                    <div class="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30 mb-5">
+                        <i class="fa-solid fa-mountain-sun text-3xl text-white"></i>
+                    </div>
+                    <span class="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-semibold uppercase tracking-wider">
+                        Trekking Comunitario & SOS
+                    </span>
+                    <h1 class="text-3xl font-extrabold tracking-tight mt-3">CumbreSegura</h1>
+                    <p class="text-sm text-slate-300 mt-1">Conecta con grupos de senderismo y camina con monitoreo de emergencia en tiempo real.</p>
+                </div>
+
+                <!-- Formulario Login -->
+                <div class="relative z-10 bg-slate-800/90 backdrop-blur-md p-5 rounded-3xl border border-slate-700/80 shadow-xl space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Correo Electrónico</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-envelope absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                            <input type="email" id="loginEmail" value="martin.silva@senderos.cl" 
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Contraseña</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                            <input type="password" value="••••••••••••" 
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <button onclick="handleLogin()" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] text-slate-950 font-bold rounded-xl text-sm shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-2">
+                        <span>Iniciar Sesión</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                    <div class="text-center pt-1">
+                        <span class="text-xs text-slate-400">¿No tienes cuenta? <button onclick="handleLogin()" class="text-emerald-400 font-semibold underline">Regístrate gratis</button></span>
+                    </div>
+                </div>
+
+                <!-- Footer Login -->
+                <div class="relative z-10 text-center text-[11px] text-slate-400">
+                    Prototipo Interactivo • Santiago, Chile
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 PANTALLA 2: HOME (MAPA + SELECTOR DE RUTAS)
+                 ========================================== -->
+            <div id="screen-home" class="screen bg-slate-50 relative overflow-hidden">
+                
+                <!-- Header Superior Flotante sobre el Mapa -->
+                <div class="px-4 pt-2 pb-3 bg-white/95 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between z-20">
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-medium">Hola, <span id="homeUserName" class="text-slate-700 font-semibold">Martín Silva</span> 👋</p>
+                        <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-location-dot text-emerald-600 text-sm"></i>
+                            Rutas en Cordillera
+                        </h2>
+                    </div>
+                    <!-- Botón Directo a Mi Perfil pedido en el prompt -->
+                    <button onclick="navigateTo('screen-profile')" class="flex items-center gap-2 bg-slate-100 hover:bg-emerald-50 border border-slate-200 px-3 py-1.5 rounded-full transition">
+                        <img id="homeUserAvatar" src="https://placehold.co/80x80/059669/ffffff?text=MS" alt="Avatar" class="w-7 h-7 rounded-full object-cover">
+                        <div class="text-left">
+                            <span class="block text-[11px] font-bold text-slate-800 leading-none">Mi Perfil</span>
+                            <span id="homeUserLevel" class="block text-[9px] font-semibold text-emerald-600">Intermedio</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Mapa Interactivo Topográfico SVG -->
+                <div class="relative h-[320px] w-full bg-[#e5efe9] overflow-hidden select-none border-b border-slate-200">
+                    <svg viewBox="0 0 400 320" class="w-full h-full object-cover">
+                        <!-- Fondo topográfico y curvas de nivel -->
+                        <rect width="400" height="320" fill="#dcece3"/>
+                        <path d="M-20,60 Q120,20 260,80 T420,40 L420,320 L-20,320 Z" fill="#cce3d6"/>
+                        <path d="M-20,150 Q160,100 290,170 T420,130 L420,320 L-20,320 Z" fill="#bad9c8"/>
+                        
+                        <!-- Curvas de nivel decorativas -->
+                        <ellipse cx="290" cy="85" rx="75" ry="40" fill="none" stroke="#9ec5b0" stroke-width="1.5" stroke-dasharray="4 3"/>
+                        <ellipse cx="290" cy="85" rx="45" ry="22" fill="none" stroke="#8ab89f" stroke-width="1.5"/>
+                        <ellipse cx="110" cy="190" rx="85" ry="45" fill="none" stroke="#9ec5b0" stroke-width="1.5" stroke-dasharray="4 3"/>
+                        
+                        <!-- Río Mapocho / Estero -->
+                        <path d="M 0,290 Q 120,250 210,265 T 400,210" fill="none" stroke="#93c5fd" stroke-width="6" stroke-linecap="round"/>
+
+                        <!-- Senderos dibujados en el mapa -->
+                        <!-- Ruta 1: Cerro Manquehue -->
+                        <path d="M 75,115 Q 105,75 140,60" fill="none" stroke="#10b981" stroke-width="3.5" stroke-dasharray="5 4" stroke-linecap="round"/>
+                        <!-- Ruta 2: Aguas de Ramón -->
+                        <path d="M 190,205 Q 235,175 265,150" fill="none" stroke="#f59e0b" stroke-width="3.5" stroke-dasharray="5 4" stroke-linecap="round"/>
+                        <!-- Ruta 3: Cerro Provincia -->
+                        <path d="M 275,115 Q 315,85 335,55" fill="none" stroke="#ef4444" stroke-width="3.5" stroke-dasharray="5 4" stroke-linecap="round"/>
+                        <!-- Ruta 4: Quebrada de Macul -->
+                        <path d="M 80,245 Q 125,220 155,205" fill="none" stroke="#3b82f6" stroke-width="3.5" stroke-dasharray="5 4" stroke-linecap="round"/>
+                    </svg>
+
+                    <!-- Pines Interactivos sobre el Mapa -->
+                    <!-- Pin 1: Manquehue -->
+                    <button onclick="openRouteDetail(1)" class="absolute top-[42px] left-[112px] group focus:outline-none pin-active">
+                        <div class="bg-emerald-600 text-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 text-[11px] font-bold border-2 border-white hover:scale-110 transition">
+                            <i class="fa-solid fa-person-hiking"></i>
+                            <span>C° Manquehue</span>
+                        </div>
+                        <div class="w-2.5 h-2.5 bg-emerald-600 rotate-45 mx-auto -mt-1 border-r border-b border-white"></div>
+                    </button>
+
+                    <!-- Pin 2: Aguas de Ramón -->
+                    <button onclick="openRouteDetail(2)" class="absolute top-[135px] left-[220px] group focus:outline-none">
+                        <div class="bg-amber-500 text-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 text-[11px] font-bold border-2 border-white hover:scale-110 transition">
+                            <i class="fa-solid fa-water"></i>
+                            <span>Aguas de Ramón</span>
+                        </div>
+                        <div class="w-2.5 h-2.5 bg-amber-500 rotate-45 mx-auto -mt-1 border-r border-b border-white"></div>
+                    </button>
+
+                    <!-- Pin 3: Cerro Provincia -->
+                    <button onclick="openRouteDetail(3)" class="absolute top-[40px] left-[265px] group focus:outline-none">
+                        <div class="bg-rose-600 text-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 text-[11px] font-bold border-2 border-white hover:scale-110 transition">
+                            <i class="fa-solid fa-mountain"></i>
+                            <span>C° Provincia</span>
+                        </div>
+                        <div class="w-2.5 h-2.5 bg-rose-600 rotate-45 mx-auto -mt-1 border-r border-b border-white"></div>
+                    </button>
+
+                    <!-- Pin 4: Quebrada de Macul -->
+                    <button onclick="openRouteDetail(4)" class="absolute top-[195px] left-[55px] group focus:outline-none">
+                        <div class="bg-blue-600 text-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 text-[11px] font-bold border-2 border-white hover:scale-110 transition">
+                            <i class="fa-solid fa-tree"></i>
+                            <span>Q. de Macul</span>
+                        </div>
+                        <div class="w-2.5 h-2.5 bg-blue-600 rotate-45 mx-auto -mt-1 border-r border-b border-white"></div>
+                    </button>
+
+                    <!-- Leyenda flotante en el mapa -->
+                    <div class="absolute bottom-2.5 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-semibold text-slate-600 shadow-sm border border-slate-200/80">
+                        <i class="fa-solid fa-hand-pointer text-emerald-600 mr-1"></i> Toca un pin o elige una ruta abajo
+                    </div>
+                </div>
+
+                <!-- Lista de Selector de Rutas -->
+                <div class="flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-20">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Selector de Rutas Disponibles</h3>
+                        <span class="text-[11px] font-semibold text-emerald-600">4 senderos activos</span>
+                    </div>
+                    <div id="routesListContainer" class="space-y-2.5">
+                        <!-- Renderizado dinámicamente por JS -->
+                    </div>
+                </div>
+
+                <!-- Barra de Navegación Inferior -->
+                <div class="absolute bottom-0 inset-x-0 h-16 bg-white border-t border-slate-200 px-6 flex items-center justify-around z-30">
+                    <button onclick="navigateTo('screen-home')" class="flex flex-col items-center gap-1 text-emerald-600">
+                        <i class="fa-solid fa-map-location-dot text-lg"></i>
+                        <span class="text-[10px] font-bold">Explorar Mapa</span>
+                    </button>
+                    <button onclick="openMyActiveGroup()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700 relative">
+                        <i class="fa-solid fa-users text-lg"></i>
+                        <span class="text-[10px] font-semibold">Mi Grupo</span>
+                        <span id="navGroupBadge" class="hidden absolute -top-1 right-2 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
+                    </button>
+                    <button onclick="navigateTo('screen-profile')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
+                        <i class="fa-solid fa-user-gear text-lg"></i>
+                        <span class="text-[10px] font-semibold">Mi Perfil</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 PANTALLA 3: GRUPOS DE UNA RUTA
+                 ========================================== -->
+            <div id="screen-route-groups" class="screen bg-slate-50 relative overflow-hidden">
+                <!-- Header Ruta -->
+                <div class="bg-slate-900 text-white p-4 pb-5 rounded-b-3xl shadow-md z-10">
+                    <div class="flex items-center justify-between mb-3">
+                        <button onclick="navigateTo('screen-home')" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-200 hover:bg-slate-700">
+                            <i class="fa-solid fa-arrow-left text-sm"></i>
+                        </button>
+                        <span id="routeDetailDifficulty" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                            Intermedio
+                        </span>
+                    </div>
+                    <h2 id="routeDetailName" class="text-xl font-extrabold">Cerro Manquehue</h2>
+                    <p id="routeDetailDesc" class="text-xs text-slate-300 mt-1">Vista panorámica 360° de Santiago. Sendero rocoso en el tramo final.</p>
+                    
+                    <div class="grid grid-cols-3 gap-2 mt-3.5 pt-3 border-t border-slate-800 text-center">
+                        <div>
+                            <span class="block text-[10px] text-slate-400">Distancia</span>
+                            <span id="routeDetailDist" class="text-xs font-bold text-white">5.8 km</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-slate-400">Tiempo Est.</span>
+                            <span id="routeDetailTime" class="text-xs font-bold text-white">3h 30m</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-slate-400">Altitud Máx.</span>
+                            <span id="routeDetailAlt" class="text-xs font-bold text-white">1.638 msnm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Principal: Crear un grupo para esta ruta -->
+                <div class="px-4 pt-3.5 pb-2">
+                    <button onclick="openCreateGroupScreen()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold rounded-2xl shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 text-xs transition">
+                        <i class="fa-solid fa-circle-plus text-base"></i>
+                        <span>Crear un grupo para esta ruta</span>
+                    </button>
+                </div>
+
+                <!-- Listado de Grupos Organizados -->
+                <div class="flex-1 overflow-y-auto no-scrollbar px-4 pt-2 pb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Salidas Organizadas</h3>
+                        <span id="routeGroupsCount" class="text-[11px] font-semibold text-slate-500">3 grupos</span>
+                    </div>
+                    <div id="groupsListContainer" class="space-y-3">
+                        <!-- Dinámico por JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 PANTALLA 4: FORMULARIO CREAR GRUPO
+                 ========================================== -->
+            <div id="screen-create-group" class="screen bg-slate-50 relative overflow-hidden">
+                <!-- Header -->
+                <div class="px-4 py-3 bg-white border-b border-slate-200 flex items-center gap-3">
+                    <button onclick="navigateTo('screen-route-groups')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+                        <i class="fa-solid fa-arrow-left text-sm"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-sm font-extrabold text-slate-800">Crear Grupo de Salida</h2>
+                        <p id="createGroupRouteSubtitle" class="text-[11px] text-emerald-600 font-semibold">Ruta: Cerro Manquehue</p>
+                    </div>
+                </div>
+
+                <!-- Formulario -->
+                <form id="createGroupForm" onsubmit="handleCreateGroupSubmit(event)" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3.5">
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nombre de la Salida / Grupo</label>
+                        <input type="text" id="cgTitle" required value="Ascenso Matutino Cumbre" placeholder="Ej: Subida al amanecer"
+                            class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Fecha de Salida</label>
+                            <input type="date" id="cgDate" required value="2026-10-18"
+                                class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Hora de Encuentro</label>
+                            <input type="time" id="cgTime" required value="08:00"
+                                class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Tamaño Máx. Grupo</label>
+                            <select id="cgMaxSize" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-500">
+                                <option value="4">4 personas</option>
+                                <option value="6">6 personas</option>
+                                <option value="8" selected>8 personas</option>
+                                <option value="12">12 personas</option>
+                                <option value="15">15 personas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Experiencia Mínima</label>
+                            <select id="cgMinExp" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-500">
+                                <option value="Principiante">Principiante</option>
+                                <option value="Intermedio" selected>Intermedio</option>
+                                <option value="Avanzado">Avanzado</option>
+                                <option value="Experto">Experto</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tiempo límite para realizar el recorrido -->
+                    <div class="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl">
+                        <label class="block text-xs font-bold text-amber-900 mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-stopwatch text-amber-600"></i>
+                            Tiempo límite para realizar el recorrido
+                        </label>
+                        <p class="text-[10px] text-amber-700 mb-2">Si el grupo supera este tiempo sin finalizar la ruta, se notificará al contacto de emergencia.</p>
+                        <select id="cgTimeLimit" class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none">
+                            <option value="120">2 horas 00 min (120 min)</option>
+                            <option value="180">3 horas 00 min (180 min)</option>
+                            <option value="240" selected>4 horas 00 min (240 min)</option>
+                            <option value="300">5 horas 00 min (300 min)</option>
+                            <option value="360">6 horas 00 min (360 min)</option>
+                        </select>
+                    </div>
+
+                    <!-- Tipo de Privacidad / Acceso -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Privacidad del Grupo</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="cgPrivacy" value="Público" checked class="peer hidden">
+                                <div class="p-2.5 rounded-xl border border-slate-200 bg-white peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-center transition">
+                                    <i class="fa-solid fa-globe text-sm text-emerald-600 block mb-1"></i>
+                                    <span class="text-[11px] font-bold block text-slate-800">Público</span>
+                                    <span class="text-[9px] text-slate-400">Entrada libre</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="cgPrivacy" value="Por Invitación" class="peer hidden">
+                                <div class="p-2.5 rounded-xl border border-slate-200 bg-white peer-checked:border-amber-500 peer-checked:bg-amber-50 text-center transition">
+                                    <i class="fa-solid fa-envelope-open-text text-sm text-amber-500 block mb-1"></i>
+                                    <span class="text-[11px] font-bold block text-slate-800">Invitación</span>
+                                    <span class="text-[9px] text-slate-400">Con solicitud</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="cgPrivacy" value="Privado" class="peer hidden">
+                                <div class="p-2.5 rounded-xl border border-slate-200 bg-white peer-checked:border-slate-800 peer-checked:bg-slate-100 text-center transition">
+                                    <i class="fa-solid fa-lock text-sm text-slate-700 block mb-1"></i>
+                                    <span class="text-[11px] font-bold block text-slate-800">Privado</span>
+                                    <span class="text-[9px] text-slate-400">Solo código</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-600/25 text-xs flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-check"></i>
+                            <span>Publicar Grupo y Abrir Chat</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ==========================================
+                 PANTALLA 5: DENTRO DEL GRUPO (CHAT + LOBBY)
+                 ========================================== -->
+            <div id="screen-group-chat" class="screen bg-slate-100 relative overflow-hidden">
+                <!-- Header del Grupo -->
+                <div class="bg-white border-b border-slate-200 px-4 py-3 z-10 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <button onclick="navigateTo('screen-route-groups')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+                                <i class="fa-solid fa-arrow-left text-xs"></i>
+                            </button>
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <h2 id="chatGroupName" class="text-sm font-extrabold text-slate-800 leading-tight">Ascenso Matutino</h2>
+                                    <span id="chatGroupBadge" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Público</span>
+                                </div>
+                                <p id="chatGroupMeta" class="text-[10px] text-slate-500 font-medium">C° Manquehue • Sáb 18 Oct, 08:00 hrs</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen de Reglas del Grupo y Participantes -->
+                    <div class="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                        <div class="flex items-center gap-3 text-slate-600">
+                            <span><i class="fa-solid fa-users text-emerald-600 mr-1"></i><strong id="chatGroupMembersCount">4/8</strong></span>
+                            <span><i class="fa-solid fa-medal text-amber-500 mr-1"></i>Mín: <strong id="chatGroupMinExp">Intermedio</strong></span>
+                            <span><i class="fa-solid fa-stopwatch text-rose-500 mr-1"></i>Límite: <strong id="chatGroupLimit">4h 00m</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Botón para Iniciar el Sendero (Simular llegada del día/hora) -->
+                    <button onclick="startActiveTrek()" class="mt-2.5 w-full py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-xs shadow flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-play"></i>
+                        <span>Iniciar Sendero (Simular llegada de fecha)</span>
+                    </button>
+                </div>
+
+                <!-- Mensajes del Chat -->
+                <div id="chatMessagesContainer" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3">
+                    <!-- Dinámico por JS -->
+                </div>
+
+                <!-- Input para enviar mensaje -->
+                <form onsubmit="handleSendMessage(event)" class="bg-white border-t border-slate-200 p-3 flex items-center gap-2">
+                    <input type="text" id="chatInput" placeholder="Escribe un mensaje al grupo..." 
+                        class="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2 text-xs focus:outline-none focus:border-emerald-500">
+                    <button type="submit" class="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow hover:bg-emerald-500 transition">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- ==========================================
+                 PANTALLA 6: MI PERFIL (EXPERIENCIA, HISTORIAL, CONTACTO EMERGENCIA)
+                 ========================================== -->
+            <div id="screen-profile" class="screen bg-slate-50 relative overflow-hidden">
+                <!-- Header -->
+                <div class="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="navigateTo('screen-home')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+                            <i class="fa-solid fa-arrow-left text-xs"></i>
+                        </button>
+                        <h2 class="text-sm font-extrabold text-slate-800">Mi Perfil de Senderista</h2>
+                    </div>
+                    <button onclick="toggleEditProfileModal(true)" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full hover:bg-emerald-100">
+                        <i class="fa-solid fa-pen mr-1"></i>Editar Datos
+                    </button>
+                </div>
+
+                <!-- Contenido Perfil -->
+                <div class="flex-1 overflow-y-auto no-scrollbar p-4 pb-20 space-y-4">
+                    
+                    <!-- Tarjeta Datos Personales + Nivel de Experiencia -->
+                    <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center gap-3.5">
+                            <img id="profileAvatar" src="https://placehold.co/100x100/059669/ffffff?text=MS" alt="Foto Perfil" class="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-500">
+                            <div class="flex-1">
+                                <h3 id="profileName" class="text-base font-extrabold text-slate-800">Martín Silva</h3>
+                                <p id="profileBio" class="text-xs text-slate-500">26 años • Amante de la media montaña 🏔️</p>
+                                <div class="mt-2 inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                                    <i class="fa-solid fa-award text-emerald-600 text-xs"></i>
+                                    <span class="text-[11px] font-extrabold text-emerald-800">Nivel: <span id="profileExpLevel">Intermedio</span></span>
+                                    <span class="text-[10px] text-emerald-600 font-semibold">(<span id="profileRoutesCount">4</span> senderos)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Barra de progreso de experiencia asociada al historial -->
+                        <div class="mt-4 pt-3 border-t border-slate-100">
+                            <div class="flex justify-between text-[10px] font-bold mb-1">
+                                <span class="text-slate-500">Progreso según Historial de Senderos</span>
+                                <span id="profileXpText" class="text-emerald-600">1.450 / 2.000 XP para Avanzado</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div id="profileXpBar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 72%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN CONTACTO DE EMERGENCIA (PRIVADO - SOLO VISIBLE PARA MÍ) -->
+                    <div class="bg-rose-50/70 border-2 border-rose-200 p-4 rounded-3xl shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider bg-rose-200/80 text-rose-800 px-2 py-0.5 rounded-md">
+                                    <i class="fa-solid fa-lock text-[9px]"></i> Privado • Solo visible para ti
+                                </span>
+                                <h4 class="text-xs font-extrabold text-slate-800 mt-1.5 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-truck-medical text-rose-600"></i>
+                                    Contacto de Emergencia SOS
+                                </h4>
+                            </div>
+                            <button onclick="toggleEmergencyModal(true)" class="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-sm transition">
+                                Editar SOS
+                            </button>
+                        </div>
+
+                        <p class="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                            Si excedes el tiempo límite configurado en una ruta, contactaremos automáticamente a este número con tu última ubicación GPS:
+                        </p>
+
+                        <div class="mt-3 bg-white p-3 rounded-2xl border border-rose-200 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
+                                    <i class="fa-solid fa-phone-volume"></i>
+                                </div>
+                                <div>
+                                    <p id="sosContactName" class="text-xs font-extrabold text-slate-800">Carolina Silva (Hermana)</p>
+                                    <p id="sosContactPhone" class="text-xs font-semibold text-rose-600">+56 9 8765 4321</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">Activo</span>
+                        </div>
+                    </div>
+
+                    <!-- HISTORIAL DE SENDEROS REALIZADOS -->
+                    <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h4 class="text-xs font-extrabold text-slate-800">Historial de Senderos Realizados</h4>
+                                <p class="text-[10px] text-slate-400">Determina automáticamente tu nivel de experiencia</p>
+                            </div>
+                            <i class="fa-solid fa-route text-emerald-600"></i>
+                        </div>
+
+                        <div id="profileHistoryList" class="space-y-2.5">
+                            <!-- Dinámico por JS -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Barra de Navegación Inferior -->
+                <div class="absolute bottom-0 inset-x-0 h-16 bg-white border-t border-slate-200 px-6 flex items-center justify-around z-30">
+                    <button onclick="navigateTo('screen-home')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
+                        <i class="fa-solid fa-map-location-dot text-lg"></i>
+                        <span class="text-[10px] font-semibold">Explorar Mapa</span>
+                    </button>
+                    <button onclick="openMyActiveGroup()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
+                        <i class="fa-solid fa-users text-lg"></i>
+                        <span class="text-[10px] font-semibold">Mi Grupo</span>
+                    </button>
+                    <button onclick="navigateTo('screen-profile')" class="flex flex-col items-center gap-1 text-emerald-600">
+                        <i class="fa-solid fa-user-gear text-lg"></i>
+                        <span class="text-[10px] font-bold">Mi Perfil</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 PANTALLA 7: SENDERO EN TIEMPO REAL + CONTADOR EMERGENCIA
+                 ========================================== -->
+            <div id="screen-active-trek" class="screen bg-slate-900 text-white relative overflow-hidden">
+                <!-- Header Monitoreo Activo -->
+                <div class="p-4 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between z-10">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">Ruta en Curso • GPS Activo</span>
+                            <h2 id="activeTrekRouteName" class="text-sm font-extrabold text-white">Cerro Manquehue</h2>
+                        </div>
+                    </div>
+                    <button onclick="navigateTo('screen-group-chat')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-[11px] font-semibold hover:bg-slate-700">
+                        <i class="fa-solid fa-comments mr-1"></i>Chat
+                    </button>
+                </div>
+
+                <!-- Mapa de Ruta en Tiempo Real con Progreso Animado -->
+                <div class="relative h-[250px] w-full bg-[#11221c] overflow-hidden border-b border-slate-800">
+                    <svg viewBox="0 0 400 250" class="w-full h-full object-cover">
+                        <!-- Curvas topográficas oscuras -->
+                        <path d="M-20,60 Q140,10 270,80 T420,40 L420,250 L-20,250 Z" fill="#152c24"/>
+                        <path d="M-20,140 Q180,90 300,160 T420,120 L420,250 L-20,250 Z" fill="#19362c"/>
+                        <circle cx="320" cy="60" r="60" fill="none" stroke="#234c3e" stroke-width="1.5" stroke-dasharray="4 4"/>
+                        <circle cx="320" cy="60" r="35" fill="none" stroke="#2a5a4a" stroke-width="1.5"/>
+
+                        <!-- Sendero Base Gris -->
+                        <path id="trekPathBase" d="M 55,205 C 120,195 150,130 215,125 C 265,120 285,75 320,60" 
+                            fill="none" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+
+                        <!-- Sendero Recorrido Verde -->
+                        <path id="trekPathProgress" d="M 55,205 C 120,195 150,130 215,125 C 265,120 285,75 320,60" 
+                            fill="none" stroke="#10b981" stroke-width="6" stroke-linecap="round"
+                            stroke-dasharray="320" stroke-dashoffset="200"/>
+
+                        <!-- Punto Inicio -->
+                        <circle cx="55" cy="205" r="6" fill="#94a3b8" stroke="#0f172a" stroke-width="2"/>
+                        <text x="35" y="228" fill="#94a3b8" font-size="10" font-weight="bold">Inicio</text>
+
+                        <!-- Punto Cumbre / Meta -->
+                        <circle cx="320" cy="60" r="8" fill="#f59e0b" stroke="#0f172a" stroke-width="2"/>
+                        <text x="295" y="42" fill="#fcd34d" font-size="10" font-weight="bold">🏁 Cumbre</text>
+
+                        <!-- Marcador Posición Actual del Grupo -->
+                        <g id="trekLiveMarker" transform="translate(165, 148)">
+                            <circle cx="0" cy="0" r="14" fill="#10b981" opacity="0.3"/>
+                            <circle cx="0" cy="0" r="7" fill="#10b981" stroke="#ffffff" stroke-width="2.5"/>
+                        </g>
+                    </svg>
+
+                    <!-- Coordenadas GPS en vivo -->
+                    <div class="absolute bottom-2.5 left-3 bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-700 text-[10px] font-mono text-emerald-300">
+                        GPS: -33.3508° S, -70.5814° W • Alt: 1.420m
+                    </div>
+                </div>
+
+                <!-- Panel del Contador y Estado de Tiempo Límite -->
+                <div class="flex-1 p-4 flex flex-col justify-between">
+                    
+                    <div id="timerBox" class="bg-slate-800/90 border border-slate-700 rounded-3xl p-4 text-center transition-colors duration-300">
+                        <span id="timerStatusBadge" class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 mb-1">
+                            Dentro del Tiempo Límite
+                        </span>
+                        <p class="text-[11px] text-slate-400">Tiempo Transcurrido / Límite del Grupo</p>
+                        
+                        <div class="my-2 flex items-baseline justify-center gap-2 font-mono">
+                            <span id="elapsedTimeDisplay" class="text-3xl font-extrabold text-white">01:45:12</span>
+                            <span class="text-sm text-slate-400">/ <span id="limitTimeDisplay">04:00:00</span></span>
+                        </div>
+
+                        <!-- Barra de tiempo consumido -->
+                        <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden mt-2">
+                            <div id="timerProgressBar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 44%"></div>
+                        </div>
+
+                        <div class="mt-3 pt-2.5 border-t border-slate-700/80 flex items-center justify-between text-[11px] text-slate-300">
+                            <span><i class="fa-solid fa-shield-heart text-rose-400 mr-1"></i>Contacto SOS:</span>
+                            <strong id="activeTrekSosName" class="text-white">Carolina Silva (+56 9 8765 4321)</strong>
+                        </div>
+                    </div>
+
+                    <!-- Controles de Simulación para el Video Demo -->
+                    <div class="space-y-2.5">
+                        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-3">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Controles para Demostración en Video:
+                            </p>
+                            <button onclick="simulateTimeLimitExceeded()" class="w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-500 active:scale-[0.99] text-white font-bold rounded-xl text-xs shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                <span>Simular Exceso de Tiempo Límite (Activar SOS)</span>
+                            </button>
+                        </div>
+
+                        <button onclick="completeTrekSuccessfully()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-2xl text-xs shadow-lg transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-flag-checkered"></i>
+                            <span>Finalizar Sendero con Éxito (+Sumar al Historial)</span>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 MODAL 1: EDITAR DATOS DE PERFIL
+                 ========================================== -->
+            <div id="modal-edit-profile" class="hidden absolute inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-end justify-center">
+                <div class="bg-white w-full rounded-t-3xl p-5 space-y-4 animate-fadeIn">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h3 class="text-sm font-extrabold text-slate-800">Editar Mi Perfil</h3>
+                        <button onclick="toggleEditProfileModal(false)" class="text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nombre Completo</label>
+                        <input type="text" id="editProfileNameInput" value="Martín Silva" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Biografía / Edad</label>
+                        <input type="text" id="editProfileBioInput" value="26 años • Amante de la media montaña 🏔️" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Color de Avatar</label>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="selectAvatarColor('059669')" class="w-8 h-8 rounded-full bg-emerald-600 border-2 border-white shadow"></button>
+                            <button type="button" onclick="selectAvatarColor('2563eb')" class="w-8 h-8 rounded-full bg-blue-600 border-2 border-white shadow"></button>
+                            <button type="button" onclick="selectAvatarColor('d97706')" class="w-8 h-8 rounded-full bg-amber-600 border-2 border-white shadow"></button>
+                            <button type="button" onclick="selectAvatarColor('7c3aed')" class="w-8 h-8 rounded-full bg-violet-600 border-2 border-white shadow"></button>
+                        </div>
+                    </div>
+                    <button onclick="saveProfileChanges()" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 MODAL 2: ASIGNAR CONTACTO DE EMERGENCIA (PRIVADO)
+                 ========================================== -->
+            <div id="modal-emergency-contact" class="hidden absolute inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-end justify-center">
+                <div class="bg-white w-full rounded-t-3xl p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <span class="text-[10px] font-bold text-rose-600 uppercase flex items-center gap-1">
+                                <i class="fa-solid fa-lock"></i> Configuración Privada
+                            </span>
+                            <h3 class="text-sm font-extrabold text-slate-800">Contacto de Emergencia</h3>
+                        </div>
+                        <button onclick="toggleEmergencyModal(false)" class="text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nombre y Parentesco</label>
+                        <input type="text" id="editSosNameInput" value="Carolina Silva (Hermana)" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Teléfono de Emergencia</label>
+                        <input type="tel" id="editSosPhoneInput" value="+56 9 8765 4321" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-medium">
+                    </div>
+                    <button onclick="saveEmergencyContact()" class="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs shadow">
+                        Guardar Contacto Privado
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 MODAL 3: ALERTA DE EMERGENCIA DISPARADA (POR EXCESO DE TIEMPO)
+                 ========================================== -->
+            <div id="modal-sos-triggered" class="hidden absolute inset-0 bg-rose-950/95 backdrop-blur-md z-50 flex flex-col items-center justify-between p-6 text-white text-center">
+                <div class="w-full flex justify-between items-center text-xs text-rose-300 font-semibold">
+                    <span><i class="fa-solid fa-satellite-dish mr-1"></i>PROTOCOLO SOS AUTOMÁTICO</span>
+                    <span>GPS ACTIVO</span>
+                </div>
+
+                <div class="my-auto flex flex-col items-center">
+                    <div class="relative flex items-center justify-center w-24 h-24 mb-5">
+                        <div class="absolute inset-0 rounded-full bg-rose-500 emergency-wave"></div>
+                        <div class="relative w-20 h-20 rounded-full bg-rose-600 border-4 border-rose-300 flex items-center justify-center shadow-2xl">
+                            <i class="fa-solid fa-phone-volume text-3xl text-white animate-bounce"></i>
+                        </div>
+                    </div>
+
+                    <span class="px-3 py-1 rounded-full bg-rose-500/30 border border-rose-400 text-rose-200 text-[11px] font-extrabold uppercase tracking-wider">
+                        Tiempo Límite Excedido
+                    </span>
+                    <h3 class="text-xl font-extrabold mt-2">Contactando a tu Número de Emergencia</h3>
+                    <p class="text-xs text-rose-200 mt-1.5 leading-relaxed">
+                        El grupo ha superado el tiempo máximo configurado para la ruta <strong id="sosModalRouteName" class="text-white">Cerro Manquehue</strong>.
+                    </p>
+
+                    <!-- Tarjeta del Contacto Privado que está siendo llamado -->
+                    <div class="mt-5 w-full bg-slate-900/90 border border-rose-500/50 rounded-2xl p-4 text-left space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold uppercase text-rose-400">Destinatario (Contacto Privado)</span>
+                            <span class="text-[10px] font-mono bg-rose-600/30 text-rose-200 px-2 py-0.5 rounded">Enviando SMS + Llamada</span>
+                        </div>
+                        <p id="sosModalContactName" class="text-sm font-extrabold text-white">Carolina Silva (Hermana)</p>
+                        <p id="sosModalContactPhone" class="text-xs font-mono text-emerald-400">+56 9 8765 4321</p>
+                        <div class="pt-2 border-t border-slate-800 text-[10px] text-slate-300 font-mono">
+                            📍 Último punto: -33.3508° S, -70.5814° W (Alt: 1.420m)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full space-y-2">
+                    <button onclick="cancelEmergencyAlert()" class="w-full py-3 bg-white text-rose-900 font-extrabold rounded-2xl text-xs shadow-lg hover:bg-rose-50 transition">
+                        Estoy Bien (Cancelar Alerta con PIN)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Indicador Home Inferior del Teléfono -->
+            <div class="h-5 bg-transparent flex items-center justify-center pointer-events-none z-40">
+                <div class="w-32 h-1 bg-slate-400/50 rounded-full"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // ESTADO EN MEMORIA DEL PROTOTIPO (100% Estático sin Base de Datos Externa)
+        // =========================================================================
+        const appState = {
+            user: {
+                name: "Martín Silva",
+                bio: "26 años • Amante de la media montaña 🏔️",
+                avatarColor: "059669",
+                emergencyContact: {
+                    name: "Carolina Silva (Hermana)",
+                    phone: "+56 9 8765 4321"
+                },
+                history: [
+                    { id: 101, route: "Quebrada de Macul", date: "04 Oct 2026", difficulty: "Principiante", xp: 250, duration: "2h 40m" },
+                    { id: 102, route: "Parque Aguas de Ramón", date: "21 Sep 2026", difficulty: "Intermedio", xp: 400, duration: "3h 25m" },
+                    { id: 103, route: "Cerro Manquehue", date: "07 Sep 2026", difficulty: "Intermedio", xp: 400, duration: "3h 10m" },
+                    { id: 104, route: "Cerro Pochoco", date: "18 Ago 2026", difficulty: "Intermedio", xp: 400, duration: "3h 45m" }
+                ]
+            },
+            selectedRouteId: 1,
+            activeGroupId: null,
+            routes: [
+                {
+                    id: 1,
+                    name: "Cerro Manquehue",
+                    sector: "Vitacura, Vía Agua del Palo",
+                    difficulty: "Intermedio",
+                    badgeColor: "emerald",
+                    distance: "5.8 km",
+                    estTime: "3h 30m",
+                    altitude: "1.638 msnm",
+                    description: "El clásico ascenso de Santiago con vista panorámica de 360° al valle y la cordillera. Requiere gateo en roca en el tramo final."
+                },
+                {
+                    id: 2,
+                    name: "Parque Aguas de Ramón",
+                    sector: "La Reina • Ruta Los Peumos",
+                    difficulty: "Intermedio",
+                    badgeColor: "amber",
+                    distance: "8.2 km",
+                    estTime: "4h 00m",
+                    altitude: "1.240 msnm",
+                    description: "Sendero rodeado de bosque esclerófilo, puentes colgantes y cascadas naturales a lo largo del estero de Ramón."
+                },
+                {
+                    id: 3,
+                    name: "Cerro Provincia",
+                    sector: "Puente Ñilhue, Lo Barnechea",
+                    difficulty: "Avanzado",
+                    badgeColor: "rose",
+                    distance: "13.5 km",
+                    estTime: "6h 30m",
+                    altitude: "2.750 msnm",
+                    description: "Ruta exigente de alta pendiente constante. Ideal para entrenamiento de montaña con vista al glaciar La Paloma."
+                },
+                {
+                    id: 4,
+                    name: "Quebrada de Macul",
+                    sector: "Peñalolén • Cascada San Juan",
+                    difficulty: "Principiante",
+                    badgeColor: "blue",
+                    distance: "6.4 km",
+                    estTime: "3h 00m",
+                    altitude: "1.350 msnm",
+                    description: "Camino familiar y sombreado junto al estero hasta llegar a la caída de agua de la Quebrada de Macul."
+                }
+            ],
+            groups: [
+                {
+                    id: 201,
+                    routeId: 1,
+                    title: "Ascenso Amanecer + Café en Cumbre",
+                    organizer: "Valentina Rojas",
+                    date: "2026-10-17",
+                    time: "07:30",
+                    currentMembers: 5,
+                    maxMembers: 8,
+                    minExp: "Intermedio",
+                    timeLimitMinutes: 210, // 3h 30m
+                    privacy: "Público",
+                    requestStatus: "joined", // none, pending, joined
+                    messages: [
+                        { sender: "Valentina Rojas", text: "¡Hola equipo! Nos juntamos en la entrada de Vía Agua del Palo a las 07:30 puntual.", time: "09:15", isMe: false },
+                        { sender: "Diego Muñoz", text: "Súper, yo llevo bloqueador extra y bolsas para basura 🏔️", time: "09:20", isMe: false }
+                    ]
+                },
+                {
+                    id: 202,
+                    routeId: 1,
+                    title: "Entrenamiento Trail & Fotografía",
+                    organizer: "Lucas Fernández",
+                    date: "2026-10-18",
+                    time: "08:30",
+                    currentMembers: 4,
+                    maxMembers: 6,
+                    minExp: "Avanzado",
+                    timeLimitMinutes: 180, // 3h 00m
+                    privacy: "Por Invitación",
+                    requestStatus: "none",
+                    messages: [
+                        { sender: "Lucas Fernández", text: "¡Bienvenidos al grupo por invitación! Mantendremos un ritmo constante de subida.", time: "10:00", isMe: false }
+                    ]
+                },
+                {
+                    id: 203,
+                    routeId: 1,
+                    title: "Grupo Cerrado Club Andino USM",
+                    organizer: "Camila Soto",
+                    date: "2026-10-19",
+                    time: "08:00",
+                    currentMembers: 6,
+                    maxMembers: 6,
+                    minExp: "Experto",
+                    timeLimitMinutes: 150,
+                    privacy: "Privado",
+                    requestStatus: "none",
+                    messages: [
+                        { sender: "Camila Soto", text: "Salida interna del club con equipo técnico completo.", time: "08:30", isMe: false }
+                    ]
+                },
+                {
+                    id: 204,
+                    routeId: 2,
+                    title: "Paseo Cascada Los Peumos",
+                    organizer: "Andrés Castro",
+                    date: "2026-10-17",
+                    time: "09:00",
+                    currentMembers: 3,
+                    maxMembers: 10,
+                    minExp: "Principiante",
+                    timeLimitMinutes: 240,
+                    privacy: "Público",
+                    requestStatus: "none",
+                    messages: [
+                        { sender: "Andrés Castro", text: "¡Hola a todos! Recuerden comprar su entrada de Conaf/Parque antes de llegar.", time: "11:10", isMe: false }
+                    ]
+                },
+                {
+                    id: 205,
+                    routeId: 3,
+                    title: "Cumbre Provincia al Día",
+                    organizer: "Tomás Aravena",
+                    date: "2026-10-24",
+                    time: "06:30",
+                    currentMembers: 3,
+                    maxMembers: 5,
+                    minExp: "Avanzado",
+                    timeLimitMinutes: 390,
+                    privacy: "Por Invitación",
+                    requestStatus: "none",
+                    messages: [
+                        { sender: "Tomás Aravena", text: "Obligatorio llevar mínimo 3 litros de agua y cortaviento.", time: "12:00", isMe: false }
+                    ]
+                },
+                {
+                    id: 206,
+                    routeId: 4,
+                    title: "Trekking Iniciación Domingo",
+                    organizer: "Sofía Herrera",
+                    date: "2026-10-18",
+                    time: "09:30",
+                    currentMembers: 7,
+                    maxMembers: 12,
+                    minExp: "Principiante",
+                    timeLimitMinutes: 180,
+                    privacy: "Público",
+                    requestStatus: "none",
+                    messages: [
+                        { sender: "Sofía Herrera", text: "¡Ideal para quienes parten en el trekking! Nos vemos en el estacionamiento.", time: "14:20", isMe: false }
+                    ]
+                }
+            ]
+        };
+
+        let trekTimerInterval = null;
+        let elapsedSeconds = 6312; // Arranca en 1h 45m 12s para que el video se vea realista de inmediato
+
+        // =========================================================================
+        // NAVEGACIÓN ENTRE PANTALLAS Y NOTIFICACIONES
+        // =========================================================================
+        function navigateTo(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(screenId);
+            if (target) target.classList.add('active');
+
+            // Ajustar color de texto de la barra de estado según el fondo de la pantalla
+            const statusBar = document.getElementById('statusBar');
+            if (screenId === 'screen-login' || screenId === 'screen-route-groups' || screenId === 'screen-active-trek') {
+                statusBar.classList.remove('text-slate-800');
+                statusBar.classList.add('text-white');
+            } else {
+                statusBar.classList.remove('text-white');
+                statusBar.classList.add('text-slate-800');
+            }
+
+            if (screenId === 'screen-home') renderRoutesList();
+            if (screenId === 'screen-profile') renderProfile();
+        }
+
+        function showToast(message, iconClass = 'fa-circle-check text-emerald-400') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+            toastMsg.textContent = message;
+            toastIcon.className = `fa-solid ${iconClass}`;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2600);
+        }
+
+        function handleLogin() {
+            showToast("¡Sesión iniciada como Martín Silva!");
+            navigateTo('screen-home');
+        }
+
+        // =========================================================================
+        // PANTALLA HOME Y SELECTOR DE RUTAS
+        // =========================================================================
+        function renderRoutesList() {
+            const container = document.getElementById('routesListContainer');
+            container.innerHTML = '';
+
+            const colorClasses = {
+                emerald: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                amber: 'bg-amber-100 text-amber-800 border-amber-200',
+                rose: 'bg-rose-100 text-rose-800 border-rose-200',
+                blue: 'bg-blue-100 text-blue-800 border-blue-200'
+            };
+
+            appState.routes.forEach(route => {
+                const groupsForRoute = appState.groups.filter(g => g.routeId === route.id).length;
+                const card = document.createElement('div');
+                card.onClick = () => openRouteDetail(route.id);
+                card.className = "bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-500 cursor-pointer transition flex items-center justify-between";
+                card.onclick = () => openRouteDetail(route.id);
+
+                card.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-xs font-extrabold text-slate-800">${route.name}</h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${colorClasses[route.badgeColor]}">${route.difficulty}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500">${route.sector}</p>
+                        <div class="flex items-center gap-3 text-[10px] font-semibold text-slate-600 pt-0.5">
+                            <span><i class="fa-solid fa-route text-slate-400 mr-1"></i>${route.distance}</span>
+                            <span><i class="fa-regular fa-clock text-slate-400 mr-1"></i>${route.estTime}</span>
+                            <span class="text-emerald-600 font-bold"><i class="fa-solid fa-users mr-1"></i>${groupsForRoute} grupos</span>
+                        </div>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // =========================================================================
+        // PANTALLA DETALLE DE RUTA Y GRUPOS ORGANIZADOS
+        // =========================================================================
+        function openRouteDetail(routeId) {
+            appState.selectedRouteId = routeId;
+            const route = appState.routes.find(r => r.id === routeId);
+            if (!route) return;
+
+            document.getElementById('routeDetailName').textContent = route.name;
+            document.getElementById('routeDetailDesc').textContent = route.description;
+            document.getElementById('routeDetailDifficulty').textContent = route.difficulty;
+            document.getElementById('routeDetailDist').textContent = route.distance;
+            document.getElementById('routeDetailTime').textContent = route.estTime;
+            document.getElementById('routeDetailAlt').textContent = route.altitude;
+
+            renderRouteGroups();
+            navigateTo('screen-route-groups');
+        }
+
+        function formatMinutes(mins) {
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return `${h}h ${m > 0 ? m + 'm' : '00m'}`;
+        }
+
+        function renderRouteGroups() {
+            const container = document.getElementById('groupsListContainer');
+            container.innerHTML = '';
+
+            const routeGroups = appState.groups.filter(g => g.routeId === appState.selectedRouteId);
+            document.getElementById('routeGroupsCount').textContent = `${routeGroups.length} grupos disponibles`;
+
+            routeGroups.forEach(group => {
+                let privacyBadge = '';
+                let actionBtn = '';
+
+                if (group.privacy === 'Público') {
+                    privacyBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-globe mr-1"></i>Público</span>`;
+                    actionBtn = `
+                        <button onclick="joinPublicGroup(${group.id})" class="w-full mt-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-right-to-bracket"></i> Unirse Directamente al Grupo
+                        </button>
+                    `;
+                } else if (group.privacy === 'Por Invitación') {
+                    privacyBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800"><i class="fa-solid fa-envelope-open-text mr-1"></i>Por Invitación</span>`;
+                    if (group.requestStatus === 'pending') {
+                        actionBtn = `
+                            <div class="mt-3 flex gap-2">
+                                <button disabled class="flex-1 py-2 bg-amber-100 text-amber-800 font-bold rounded-xl text-xs">
+                                    <i class="fa-solid fa-hourglass-half mr-1"></i>Solicitud Enviada
+                                </button>
+                                <button onclick="approveInvitationForDemo(${group.id})" class="px-3 py-2 bg-slate-800 text-white font-bold rounded-xl text-[11px]" title="Botón de demostración para entrar al grupo">
+                                    Simular Aceptación →
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        actionBtn = `
+                            <button onclick="requestToJoinGroup(${group.id})" class="w-full mt-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-paper-plane"></i> Solicitar Unirse al Grupo
+                            </button>
+                        `;
+                    }
+                } else {
+                    privacyBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700"><i class="fa-solid fa-lock mr-1"></i>Privado</span>`;
+                    actionBtn = `
+                        <button onclick="enterPrivateGroupWithDemo(${group.id})" class="w-full mt-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition">
+                            <i class="fa-solid fa-key mr-1"></i> Grupo Privado (Ingresar con Código Demo)
+                        </button>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl border border-slate-200 shadow-sm";
+                card.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <h4 class="text-xs font-extrabold text-slate-800">${group.title}</h4>
+                            <p class="text-[11px] text-slate-500">Organiza: <strong class="text-slate-700">${group.organizer}</strong></p>
+                        </div>
+                        ${privacyBadge}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-600">
+                        <div><i class="fa-regular fa-calendar text-emerald-600 mr-1.5"></i><strong>${group.date}</strong> • ${group.time}</div>
+                        <div><i class="fa-solid fa-users text-emerald-600 mr-1.5"></i>Cupos: <strong>${group.currentMembers}/${group.maxMembers}</strong></div>
+                        <div><i class="fa-solid fa-medal text-amber-500 mr-1.5"></i>Mín: <strong>${group.minExp}</strong></div>
+                        <div><i class="fa-solid fa-stopwatch text-rose-500 mr-1.5"></i>Límite: <strong>${formatMinutes(group.timeLimitMinutes)}</strong></div>
+                    </div>
+
+                    ${actionBtn}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function joinPublicGroup(groupId) {
+            appState.activeGroupId = groupId;
+            document.getElementById('navGroupBadge').classList.remove('hidden');
+            showToast("Te has unido al grupo público");
+            openGroupChatScreen(groupId);
+        }
+
+        function requestToJoinGroup(groupId) {
+            const group = appState.groups.find(g => g.id === groupId);
+            if (!group) return;
+            group.requestStatus = 'pending';
+            showToast("Solicitud enviada al organizador", "fa-paper-plane text-amber-400");
+            renderRouteGroups();
+        }
+
+        function approveInvitationForDemo(groupId) {
+            const group = appState.groups.find(g => g.id === groupId);
+            if (!group) return;
+            group.requestStatus = 'joined';
+            appState.activeGroupId = groupId;
+            document.getElementById('navGroupBadge').classList.remove('hidden');
+            showToast("¡Organizador aceptó tu invitación!");
+            openGroupChatScreen(groupId);
+        }
+
+        function enterPrivateGroupWithDemo(groupId) {
+            appState.activeGroupId = groupId;
+            document.getElementById('navGroupBadge').classList.remove('hidden');
+            showToast("Código validado • Entrando al grupo privado");
+            openGroupChatScreen(groupId);
+        }
+
+        // =========================================================================
+        // CREACIÓN DE UN NUEVO GRUPO
+        // =========================================================================
+        function openCreateGroupScreen() {
+            const route = appState.routes.find(r => r.id === appState.selectedRouteId);
+            document.getElementById('createGroupRouteSubtitle').textContent = `Ruta: ${route.name}`;
+            navigateTo('screen-create-group');
+        }
+
+        function handleCreateGroupSubmit(e) {
+            e.preventDefault();
+            const title = document.getElementById('cgTitle').value.trim() || "Salida Grupal";
+            const date = document.getElementById('cgDate').value;
+            const time = document.getElementById('cgTime').value;
+            const maxMembers = parseInt(document.getElementById('cgMaxSize').value, 10);
+            const minExp = document.getElementById('cgMinExp').value;
+            const timeLimitMinutes = parseInt(document.getElementById('cgTimeLimit').value, 10);
+            const privacy = document.querySelector('input[name="cgPrivacy"]:checked').value;
+
+            const newGroup = {
+                id: Date.now(),
+                routeId: appState.selectedRouteId,
+                title,
+                organizer: appState.user.name + " (Tú)",
+                date,
+                time,
+                currentMembers: 1,
+                maxMembers,
+                minExp,
+                timeLimitMinutes,
+                privacy,
+                requestStatus: 'joined',
+                messages: [
+                    {
+                        sender: "Sistema CumbreSegura",
+                        text: `Grupo "${title}" creado con éxito. Tiempo límite configurado: ${formatMinutes(timeLimitMinutes)}.`,
+                        time: "Ahora",
+                        isMe: false
+                    }
+                ]
+            };
+
+            appState.groups.unshift(newGroup);
+            appState.activeGroupId = newGroup.id;
+            document.getElementById('navGroupBadge').classList.remove('hidden');
+
+            showToast("¡Grupo creado! Entrando a la sala de chat");
+            openGroupChatScreen(newGroup.id);
+        }
+
+        // =========================================================================
+        // SALA DE CHAT DEL GRUPO
+        // =========================================================================
+        function openGroupChatScreen(groupId) {
+            const group = appState.groups.find(g => g.id === groupId);
+            if (!group) return;
+            const route = appState.routes.find(r => r.id === group.routeId);
+
+            document.getElementById('chatGroupName').textContent = group.title;
+            document.getElementById('chatGroupBadge').textContent = group.privacy;
+            document.getElementById('chatGroupMeta').textContent = `${route.name} • ${group.date} a las ${group.time} hrs`;
+            document.getElementById('chatGroupMembersCount').textContent = `${group.currentMembers}/${group.maxMembers}`;
+            document.getElementById('chatGroupMinExp').textContent = group.minExp;
+            document.getElementById('chatGroupLimit').textContent = formatMinutes(group.timeLimitMinutes);
+
+            renderChatMessages(group);
+            navigateTo('screen-group-chat');
+        }
+
+        function openMyActiveGroup() {
+            if (!appState.activeGroupId) {
+                appState.activeGroupId = appState.groups[0].id;
+            }
+            openGroupChatScreen(appState.activeGroupId);
+        }
+
+        function renderChatMessages(group) {
+            const container = document.getElementById('chatMessagesContainer');
+            container.innerHTML = '';
+
+            group.messages.forEach(msg => {
+                const bubble = document.createElement('div');
+                if (msg.isMe) {
+                    bubble.className = "flex flex-col items-end";
+                    bubble.innerHTML = `
+                        <div class="bg-emerald-600 text-white px-3.5 py-2 rounded-2xl rounded-tr-xs max-w-[80%] text-xs shadow-sm">
+                            ${msg.text}
+                        </div>
+                        <span class="text-[9px] text-slate-400 mt-0.5">Tú • ${msg.time}</span>
+                    `;
+                } else {
+                    bubble.className = "flex flex-col items-start";
+                    bubble.innerHTML = `
+                        <span class="text-[10px] font-bold text-slate-600 ml-1 mb-0.5">${msg.sender}</span>
+                        <div class="bg-white border border-slate-200 text-slate-800 px-3.5 py-2 rounded-2xl rounded-tl-xs max-w-[82%] text-xs shadow-sm">
+                            ${msg.text}
+                        </div>
+                        <span class="text-[9px] text-slate-400 mt-0.5 ml-1">${msg.time}</span>
+                    `;
+                }
+                container.appendChild(bubble);
+            });
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleSendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const group = appState.groups.find(g => g.id === appState.activeGroupId);
+            if (!group) return;
+
+            group.messages.push({
+                sender: appState.user.name,
+                text,
+                time: "Ahora",
+                isMe: true
+            });
+            input.value = '';
+            renderChatMessages(group);
+
+            // Respuesta automática simulada para que el video se vea vivo
+            setTimeout(() => {
+                group.messages.push({
+                    sender: "Valentina Rojas",
+                    text: "¡Excelente! Ya estamos todos listos en el punto de encuentro para iniciar el sendero 🥾⛰️",
+                    time: "Ahora",
+                    isMe: false
+                });
+                renderChatMessages(group);
+            }, 1100);
+        }
+
+        // =========================================================================
+        // PERFIL DEL USUARIO, NIVEL DE EXPERIENCIA E HISTORIAL
+        // =========================================================================
+        function calculateExperienceLevel(historyCount) {
+            if (historyCount <= 2) return { level: "Principiante", xp: historyCount * 350, nextXp: 1000, pct: 45 };
+            if (historyCount <= 5) return { level: "Intermedio", xp: 1100 + (historyCount * 100), nextXp: 2000, pct: 75 };
+            return { level: "Avanzado", xp: 2250, nextXp: 3000, pct: 90 };
+        }
+
+        function renderProfile() {
+            const u = appState.user;
+            const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            const avatarUrl = `https://placehold.co/100x100/${u.avatarColor}/ffffff?text=${initials}`;
+
+            document.getElementById('profileAvatar').src = avatarUrl;
+            document.getElementById('homeUserAvatar').src = avatarUrl;
+            document.getElementById('profileName').textContent = u.name;
+            document.getElementById('homeUserName').textContent = u.name;
+            document.getElementById('profileBio').textContent = u.bio;
+
+            const expData = calculateExperienceLevel(u.history.length);
+            document.getElementById('profileExpLevel').textContent = expData.level;
+            document.getElementById('homeUserLevel').textContent = expData.level;
+            document.getElementById('profileRoutesCount').textContent = u.history.length;
+            document.getElementById('profileXpText').textContent = `${expData.xp} / ${expData.nextXp} XP`;
+            document.getElementById('profileXpBar').style.width = `${expData.pct}%`;
+
+            // Contacto de emergencia privado
+            document.getElementById('sosContactName').textContent = u.emergencyContact.name;
+            document.getElementById('sosContactPhone').textContent = u.emergencyContact.phone;
+
+            // Renderizar Historial de Senderos
+            const histContainer = document.getElementById('profileHistoryList');
+            histContainer.innerHTML = '';
+            u.history.forEach(item => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80";
+                row.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">
+                            <i class="fa-solid fa-mountain"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">${item.route}</p>
+                            <p class="text-[10px] text-slate-500">${item.date} • Duración: ${item.duration}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">+${item.xp} XP</span>
+                        <span class="block text-[9px] text-slate-400 mt-0.5">${item.difficulty}</span>
+                    </div>
+                `;
+                histContainer.appendChild(row);
+            });
+        }
+
+        function toggleEditProfileModal(show) {
+            const modal = document.getElementById('modal-edit-profile');
+            modal.classList.toggle('hidden', !show);
+        }
+
+        function selectAvatarColor(hex) {
+            appState.user.avatarColor = hex;
+            showToast("Color de avatar actualizado");
+        }
+
+        function saveProfileChanges() {
+            const newName = document.getElementById('editProfileNameInput').value.trim();
+            const newBio = document.getElementById('editProfileBioInput').value.trim();
+            if (newName) appState.user.name = newName;
+            if (newBio) appState.user.bio = newBio;
+            toggleEditProfileModal(false);
+            renderProfile();
+            showToast("Perfil actualizado correctamente");
+        }
+
+        function toggleEmergencyModal(show) {
+            const modal = document.getElementById('modal-emergency-contact');
+            modal.classList.toggle('hidden', !show);
+        }
+
+        function saveEmergencyContact() {
+            const name = document.getElementById('editSosNameInput').value.trim();
+            const phone = document.getElementById('editSosPhoneInput').value.trim();
+            if (name && phone) {
+                appState.user.emergencyContact.name = name;
+                appState.user.emergencyContact.phone = phone;
+            }
+            toggleEmergencyModal(false);
+            renderProfile();
+            showToast("Contacto privado SOS guardado", "fa-shield-heart text-rose-400");
+        }
+
+        // =========================================================================
+        // MONITOREO DE RUTA EN TIEMPO REAL Y ALERTA DE EMERGENCIA
+        // =========================================================================
+        function formatSecondsToHMS(totalSecs) {
+            const hrs = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+            const secs = String(totalSecs % 60).padStart(2, '0');
+            return `${hrs}:${mins}:${secs}`;
+        }
+
+        function startActiveTrek() {
+            const group = appState.groups.find(g => g.id === appState.activeGroupId) || appState.groups[0];
+            const route = appState.routes.find(r => r.id === group.routeId);
+
+            document.getElementById('activeTrekRouteName').textContent = `${route.name} (${group.title})`;
+            document.getElementById('activeTrekSosName').textContent = `${appState.user.emergencyContact.name} (${appState.user.emergencyContact.phone})`;
+
+            const limitSeconds = group.timeLimitMinutes * 60;
+            document.getElementById('limitTimeDisplay').textContent = formatSecondsToHMS(limitSeconds);
+
+            // Reiniciar estado visual del contador
+            elapsedSeconds = Math.floor(limitSeconds * 0.45);
+            updateTimerVisuals(elapsedSeconds, limitSeconds, false);
+
+            if (trekTimerInterval) clearInterval(trekTimerInterval);
+            trekTimerInterval = setInterval(() => {
+                elapsedSeconds++;
+                updateTimerVisuals(elapsedSeconds, limitSeconds, elapsedSeconds > limitSeconds);
+            }, 1000);
+
+            navigateTo('screen-active-trek');
+            showToast("Sendero iniciado • Monitoreo GPS activo");
+        }
+
+        function updateTimerVisuals(elapsed, limit, isExceeded) {
+            document.getElementById('elapsedTimeDisplay').textContent = formatSecondsToHMS(elapsed);
+            const pct = Math.min(100, Math.round((elapsed / limit) * 100));
+            const bar = document.getElementById('timerProgressBar');
+            const badge = document.getElementById('timerStatusBadge');
+            const box = document.getElementById('timerBox');
+
+            bar.style.width = `${pct}%`;
+
+            if (isExceeded) {
+                bar.className = "h-full bg-rose-500 transition-all duration-300";
+                badge.className = "inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-500 text-white mb-1 animate-pulse";
+                badge.textContent = "⚠️ TIEMPO LÍMITE EXCEDIDO";
+                box.className = "bg-rose-950/90 border-2 border-rose-500 rounded-3xl p-4 text-center transition-colors duration-300";
+            } else {
+                bar.className = "h-full bg-emerald-500 transition-all duration-300";
+                badge.className = "inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 mb-1";
+                badge.textContent = "Dentro del Tiempo Límite";
+                box.className = "bg-slate-800/90 border border-slate-700 rounded-3xl p-4 text-center transition-colors duration-300";
+            }
+        }
+
+        function simulateTimeLimitExceeded() {
+            const group = appState.groups.find(g => g.id === appState.activeGroupId) || appState.groups[0];
+            const route = appState.routes.find(r => r.id === group.routeId);
+            const limitSeconds = group.timeLimitMinutes * 60;
+
+            // Adelantar reloj superando el tiempo límite por 15 minutos
+            elapsedSeconds = limitSeconds + 900;
+            updateTimerVisuals(elapsedSeconds, limitSeconds, true);
+
+            // Rellenar y mostrar modal de emergencia
+            document.getElementById('sosModalRouteName').textContent = route.name;
+            document.getElementById('sosModalContactName').textContent = appState.user.emergencyContact.name;
+            document.getElementById('sosModalContactPhone').textContent = appState.user.emergencyContact.phone;
+            document.getElementById('modal-sos-triggered').classList.remove('hidden');
+        }
+
+        function cancelEmergencyAlert() {
+            document.getElementById('modal-sos-triggered').classList.add('hidden');
+            showToast("Alerta SOS cancelada por el usuario");
+        }
+
+        function completeTrekSuccessfully() {
+            if (trekTimerInterval) clearInterval(trekTimerInterval);
+            const group = appState.groups.find(g => g.id === appState.activeGroupId) || appState.groups[0];
+            const route = appState.routes.find(r => r.id === group.routeId);
+
+            // Añadir al historial del usuario para que suba su nivel de experiencia
+            appState.user.history.unshift({
+                id: Date.now(),
+                route: route.name,
+                date: "Hoy",
+                difficulty: route.difficulty,
+                xp: 450,
+                duration: formatMinutes(Math.round(elapsedSeconds / 60))
+            });
+
+            showToast("¡Cumbre completada! Sumado a tu historial");
+            navigateTo('screen-profile');
+        }
+
+        function resetPrototype() {
+            if (trekTimerInterval) clearInterval(trekTimerInterval);
+            document.getElementById('modal-sos-triggered').classList.add('hidden');
+            navigateTo('screen-login');
+            showToast("Prototipo reiniciado al inicio");
+        }
+
+        // Inicializar vistas al cargar
+        window.onload = () => {
+            renderRoutesList();
+            renderProfile();
+        };
+    </script>
+</body>
+</html>
