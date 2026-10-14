@@ -625,10 +625,11 @@
                             <div class="flex-1">
                                 <h3 id="profileName" class="text-base font-extrabold text-slate-800">Martín Silva</h3>
                                 <p id="profileBio" class="text-xs text-slate-500">26 años • Amante de la media montaña 🏔️</p>
-                                <div class="mt-2 inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-                                    <i class="fa-solid fa-award text-emerald-600 text-xs"></i>
-                                    <span class="text-[11px] font-extrabold text-emerald-800">Nivel: <span id="profileExpLevel">Intermedio</span></span>
-                                    <span class="text-[10px] text-emerald-600 font-semibold">(<span id="profileRoutesCount">4</span> senderos)</span>
+                                <div class="mt-2">
+                                    <span class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                                        <i class="fa-solid fa-user-check text-amber-600 text-xs"></i>
+                                        <span class="text-[11px] font-extrabold text-amber-800">Percibido: <span id="profilePerceivedLevel">Intermedio</span></span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -636,12 +637,13 @@
                         <!-- Barra de progreso de experiencia asociada al historial -->
                         <div class="mt-4 pt-3 border-t border-slate-100">
                             <div class="flex justify-between text-[10px] font-bold mb-1">
-                                <span class="text-slate-500">Progreso según Historial de Senderos</span>
-                                <span id="profileXpText" class="text-emerald-600">1.450 / 2.000 XP para Avanzado</span>
+                                <span id="profileXpLevel" class="text-slate-800">Nivel 2</span>
+                                <span id="profileXpText" class="text-emerald-600">1.500 / 2.000 XP</span>
                             </div>
                             <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                                 <div id="profileXpBar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 72%"></div>
                             </div>
+                            <p class="text-[9px] text-slate-400 mt-1.5">Sube con cada sendero completado (<span id="profileRoutesCount">4</span> en tu historial)</p>
                         </div>
                     </div>
 
@@ -845,6 +847,30 @@
                             <button type="button" onclick="selectAvatarColor('7c3aed')" class="w-8 h-8 rounded-full bg-violet-600 border-2 border-white shadow"></button>
                         </div>
                     </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nivel de Experiencia Percibido</label>
+                        <p class="text-[10px] text-slate-400 mb-2 leading-relaxed">Es el nivel que tú declaras. El nivel interno se calcula automáticamente con tu historial de senderos.</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" data-level="Principiante" onclick="selectPerceivedLevel('Principiante')" class="perceived-level-btn border-slate-200 bg-white text-slate-700 py-2.5 px-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition">
+                                <i class="fa-solid fa-seedling text-emerald-600"></i>Principiante
+                                <i class="fa-solid fa-check perceived-check text-emerald-600 hidden"></i>
+                            </button>
+                            <button type="button" data-level="Intermedio" onclick="selectPerceivedLevel('Intermedio')" class="perceived-level-btn border-slate-200 bg-white text-slate-700 py-2.5 px-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition">
+                                <i class="fa-solid fa-person-hiking text-emerald-600"></i>Intermedio
+                                <i class="fa-solid fa-check perceived-check text-emerald-600 hidden"></i>
+                            </button>
+                            <button type="button" data-level="Avanzado" onclick="selectPerceivedLevel('Avanzado')" class="perceived-level-btn border-slate-200 bg-white text-slate-700 py-2.5 px-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition">
+                                <i class="fa-solid fa-mountain text-emerald-600"></i>Avanzado
+                                <i class="fa-solid fa-check perceived-check text-emerald-600 hidden"></i>
+                            </button>
+                            <button type="button" data-level="Experto" onclick="selectPerceivedLevel('Experto')" class="perceived-level-btn border-slate-200 bg-white text-slate-700 py-2.5 px-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition">
+                                <i class="fa-solid fa-crown text-amber-500"></i>Experto
+                                <i class="fa-solid fa-check perceived-check text-emerald-600 hidden"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <button onclick="saveProfileChanges()" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow">
                         Guardar Cambios
                     </button>
@@ -944,6 +970,7 @@
                 name: "Martín Silva",
                 bio: "26 años • Amante de la media montaña 🏔️",
                 avatarColor: "059669",
+                perceivedLevel: "Intermedio",
                 emergencyContact: {
                     name: "Carolina Silva (Hermana)",
                     phone: "+56 9 8765 4321"
@@ -1537,9 +1564,9 @@
         // PERFIL DEL USUARIO, NIVEL DE EXPERIENCIA E HISTORIAL
         // =========================================================================
         function calculateExperienceLevel(historyCount) {
-            if (historyCount <= 2) return { level: "Principiante", xp: historyCount * 350, nextXp: 1000, pct: 45 };
-            if (historyCount <= 5) return { level: "Intermedio", xp: 1100 + (historyCount * 100), nextXp: 2000, pct: 75 };
-            return { level: "Avanzado", xp: 2250, nextXp: 3000, pct: 90 };
+            if (historyCount <= 2) return { level: "Principiante", levelNumber: 1, xp: historyCount * 350, nextXp: 1000, pct: 45 };
+            if (historyCount <= 5) return { level: "Intermedio", levelNumber: 2, xp: 1100 + (historyCount * 100), nextXp: 2000, pct: 75 };
+            return { level: "Avanzado", levelNumber: 3, xp: 2250, nextXp: 3000, pct: 90 };
         }
 
         function renderProfile() {
@@ -1554,8 +1581,9 @@
             document.getElementById('profileBio').textContent = u.bio;
 
             const expData = calculateExperienceLevel(u.history.length);
-            document.getElementById('profileExpLevel').textContent = expData.level;
+            document.getElementById('profilePerceivedLevel').textContent = u.perceivedLevel;
             document.getElementById('homeUserLevel').textContent = expData.level;
+            document.getElementById('profileXpLevel').textContent = `Nivel ${expData.levelNumber}`;
             document.getElementById('profileRoutesCount').textContent = u.history.length;
             document.getElementById('profileXpText').textContent = `${expData.xp} / ${expData.nextXp} XP`;
             document.getElementById('profileXpBar').style.width = `${expData.pct}%`;
@@ -1592,11 +1620,27 @@
         function toggleEditProfileModal(show) {
             const modal = document.getElementById('modal-edit-profile');
             modal.classList.toggle('hidden', !show);
+            if (show) selectPerceivedLevel(appState.user.perceivedLevel);
         }
 
         function selectAvatarColor(hex) {
             appState.user.avatarColor = hex;
             showToast("Color de avatar actualizado");
+        }
+
+        function selectPerceivedLevel(level) {
+            appState.user.perceivedLevel = level;
+            document.querySelectorAll('.perceived-level-btn').forEach(btn => {
+                const active = btn.dataset.level === level;
+                btn.classList.toggle('border-emerald-600', active);
+                btn.classList.toggle('bg-emerald-50', active);
+                btn.classList.toggle('text-emerald-700', active);
+                btn.classList.toggle('border-slate-200', !active);
+                btn.classList.toggle('bg-white', !active);
+                btn.classList.toggle('text-slate-700', !active);
+                const check = btn.querySelector('.perceived-check');
+                if (check) check.classList.toggle('hidden', !active);
+            });
         }
 
         function saveProfileChanges() {
