@@ -327,9 +327,9 @@
                         <i class="fa-solid fa-map-location-dot text-lg"></i>
                         <span class="text-[10px] font-bold">Explorar Mapa</span>
                     </button>
-                    <button onclick="openMyActiveGroup()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700 relative">
+                    <button onclick="openMyGroupsScreen()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700 relative">
                         <i class="fa-solid fa-users text-lg"></i>
-                        <span class="text-[10px] font-semibold">Mi Grupo</span>
+                        <span class="text-[10px] font-semibold">Mis Grupos</span>
                         <span id="navGroupBadge" class="hidden absolute -top-1 right-2 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
                     </button>
                     <button onclick="navigateTo('screen-profile')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
@@ -515,7 +515,7 @@
                 <div class="bg-white border-b border-slate-200 px-4 py-3 z-10 shadow-sm">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
-                            <button onclick="navigateTo('screen-route-groups')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+                            <button onclick="navigateTo(appState.chatReturnScreen || 'screen-route-groups')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
                                 <i class="fa-solid fa-arrow-left text-xs"></i>
                             </button>
                             <div>
@@ -557,6 +557,45 @@
                         <i class="fa-solid fa-paper-plane text-xs"></i>
                     </button>
                 </form>
+            </div>
+
+            <!-- ==========================================
+                 PANTALLA 5B: MIS GRUPOS (LISTA DE GRUPOS DEL USUARIO)
+                 ========================================== -->
+            <div id="screen-my-groups" class="screen bg-slate-50 relative overflow-hidden">
+                <!-- Header -->
+                <div class="px-4 py-3 bg-white border-b border-slate-200 flex items-center gap-3">
+                    <button onclick="navigateTo('screen-home')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+                        <i class="fa-solid fa-arrow-left text-xs"></i>
+                    </button>
+                    <div class="flex-1">
+                        <h2 class="text-sm font-extrabold text-slate-800">Mis Grupos</h2>
+                        <p id="myGroupsCount" class="text-[11px] text-emerald-600 font-semibold">0 grupos</p>
+                    </div>
+                </div>
+
+                <!-- Listado de grupos a los que pertenezco -->
+                <div class="flex-1 overflow-y-auto no-scrollbar p-4 pb-20">
+                    <div id="myGroupsListContainer" class="space-y-3">
+                        <!-- Dinámico por JS -->
+                    </div>
+                </div>
+
+                <!-- Barra de Navegación Inferior -->
+                <div class="absolute bottom-0 inset-x-0 h-16 bg-white border-t border-slate-200 px-6 flex items-center justify-around z-30">
+                    <button onclick="navigateTo('screen-home')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
+                        <i class="fa-solid fa-map-location-dot text-lg"></i>
+                        <span class="text-[10px] font-semibold">Explorar Mapa</span>
+                    </button>
+                    <button onclick="openMyGroupsScreen()" class="flex flex-col items-center gap-1 text-emerald-600 relative">
+                        <i class="fa-solid fa-users text-lg"></i>
+                        <span class="text-[10px] font-bold">Mis Grupos</span>
+                    </button>
+                    <button onclick="navigateTo('screen-profile')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
+                        <i class="fa-solid fa-user-gear text-lg"></i>
+                        <span class="text-[10px] font-semibold">Mi Perfil</span>
+                    </button>
+                </div>
             </div>
 
             <!-- ==========================================
@@ -664,9 +703,9 @@
                         <i class="fa-solid fa-map-location-dot text-lg"></i>
                         <span class="text-[10px] font-semibold">Explorar Mapa</span>
                     </button>
-                    <button onclick="openMyActiveGroup()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
+                    <button onclick="openMyGroupsScreen()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
                         <i class="fa-solid fa-users text-lg"></i>
-                        <span class="text-[10px] font-semibold">Mi Grupo</span>
+                        <span class="text-[10px] font-semibold">Mis Grupos</span>
                     </button>
                     <button onclick="navigateTo('screen-profile')" class="flex flex-col items-center gap-1 text-emerald-600">
                         <i class="fa-solid fa-user-gear text-lg"></i>
@@ -918,6 +957,7 @@
             },
             selectedRouteId: 1,
             activeGroupId: null,
+            chatReturnScreen: 'screen-route-groups',
             routes: [
                 {
                     id: 1,
@@ -1094,6 +1134,7 @@
 
             if (screenId === 'screen-home') renderRoutesList();
             if (screenId === 'screen-profile') renderProfile();
+            if (screenId === 'screen-my-groups') renderMyGroups();
         }
 
         function showToast(message, iconClass = 'fa-circle-check text-emerald-400') {
@@ -1254,6 +1295,9 @@
         }
 
         function joinPublicGroup(groupId) {
+            const group = appState.groups.find(g => g.id === groupId);
+            if (!group) return;
+            group.requestStatus = 'joined';
             appState.activeGroupId = groupId;
             document.getElementById('navGroupBadge').classList.remove('hidden');
             showToast("Te has unido al grupo público");
@@ -1279,6 +1323,8 @@
         }
 
         function enterPrivateGroupWithDemo(groupId) {
+            const group = appState.groups.find(g => g.id === groupId);
+            if (group) group.requestStatus = 'joined';
             appState.activeGroupId = groupId;
             document.getElementById('navGroupBadge').classList.remove('hidden');
             showToast("Código validado • Entrando al grupo privado");
@@ -1338,11 +1384,12 @@
         // =========================================================================
         // SALA DE CHAT DEL GRUPO
         // =========================================================================
-        function openGroupChatScreen(groupId) {
+        function openGroupChatScreen(groupId, returnScreen = 'screen-route-groups') {
             const group = appState.groups.find(g => g.id === groupId);
             if (!group) return;
             const route = appState.routes.find(r => r.id === group.routeId);
 
+            appState.chatReturnScreen = returnScreen;
             document.getElementById('chatGroupName').textContent = group.title;
             document.getElementById('chatGroupBadge').textContent = group.privacy;
             document.getElementById('chatGroupMeta').textContent = `${route.name} • ${group.date} a las ${group.time} hrs`;
@@ -1354,11 +1401,76 @@
             navigateTo('screen-group-chat');
         }
 
-        function openMyActiveGroup() {
-            if (!appState.activeGroupId) {
-                appState.activeGroupId = appState.groups[0].id;
+        // =========================================================================
+        // MIS GRUPOS (LISTA DE GRUPOS A LOS QUE PERTENEZCO)
+        // =========================================================================
+        function openMyGroupsScreen() {
+            navigateTo('screen-my-groups');
+        }
+
+        function renderMyGroups() {
+            const container = document.getElementById('myGroupsListContainer');
+            const myGroups = appState.groups.filter(g => g.requestStatus === 'joined');
+            document.getElementById('myGroupsCount').textContent = `${myGroups.length} ${myGroups.length === 1 ? 'grupo' : 'grupos'}`;
+            container.innerHTML = '';
+
+            if (myGroups.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-6 rounded-3xl border border-dashed border-slate-300 text-center">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                            <i class="fa-solid fa-users text-2xl"></i>
+                        </div>
+                        <h4 class="text-sm font-extrabold text-slate-800">Aún no estás en ningún grupo</h4>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Únete a una salida organizada o crea un grupo desde el mapa para verlo aquí.</p>
+                        <button onclick="navigateTo('screen-home')" class="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition">
+                            <i class="fa-solid fa-map-location-dot mr-1.5"></i>Explorar Rutas
+                        </button>
+                    </div>
+                `;
+                return;
             }
-            openGroupChatScreen(appState.activeGroupId);
+
+            const privacyBadges = {
+                'Público': `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-globe mr-1"></i>Público</span>`,
+                'Por Invitación': `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800"><i class="fa-solid fa-envelope-open-text mr-1"></i>Por Invitación</span>`,
+                'Privado': `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700"><i class="fa-solid fa-lock mr-1"></i>Privado</span>`
+            };
+
+            myGroups.forEach(group => {
+                const route = appState.routes.find(r => r.id === group.routeId);
+                const lastMsg = group.messages[group.messages.length - 1];
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-500 cursor-pointer transition";
+                card.onclick = () => {
+                    appState.activeGroupId = group.id;
+                    openGroupChatScreen(group.id, 'screen-my-groups');
+                };
+                card.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <h4 class="text-xs font-extrabold text-slate-800">${group.title}</h4>
+                            <p class="text-[11px] text-slate-500"><i class="fa-solid fa-route text-emerald-600 mr-1"></i>${route ? route.name : 'Ruta'} • Organiza: <strong class="text-slate-700">${group.organizer}</strong></p>
+                        </div>
+                        ${privacyBadges[group.privacy] || ''}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-600">
+                        <div><i class="fa-regular fa-calendar text-emerald-600 mr-1.5"></i><strong>${group.date}</strong> • ${group.time}</div>
+                        <div><i class="fa-solid fa-users text-emerald-600 mr-1.5"></i>Cupos: <strong>${group.currentMembers}/${group.maxMembers}</strong></div>
+                    </div>
+
+                    ${lastMsg ? `
+                    <div class="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center gap-2 text-[11px] text-slate-500">
+                        <i class="fa-solid fa-comments text-emerald-600"></i>
+                        <span class="truncate"><strong class="text-slate-700">${lastMsg.isMe ? 'Tú' : lastMsg.sender}:</strong> ${lastMsg.text}</span>
+                    </div>` : ''}
+
+                    <div class="mt-3 w-full py-2 bg-emerald-50 text-emerald-700 font-bold rounded-xl text-xs text-center flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-comments"></i>Abrir Chat
+                    </div>
+                `;
+                container.appendChild(card);
+            });
         }
 
         function renderChatMessages(group) {
