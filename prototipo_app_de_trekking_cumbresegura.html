@@ -13,7 +13,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at top left, #0f172a, #1e293b, #090d16);
+            background: #ffffff;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -120,30 +120,6 @@
 <body>
 
     <div class="flex flex-col lg:flex-row items-center gap-8 max-w-6xl w-full justify-center">
-        
-        <!-- Guía lateral para el video (Opcional en escritorio, ayuda al presentador) -->
-        <div class="hidden xl:flex flex-col bg-slate-800/80 backdrop-blur-md border border-slate-700 text-slate-200 p-6 rounded-3xl w-80 shadow-xl">
-            <div class="flex items-center gap-3 mb-4">
-                <span class="bg-emerald-500/20 text-emerald-400 p-2.5 rounded-xl">
-                    <i class="fa-solid fa-video text-lg"></i>
-                </span>
-                <div>
-                    <h2 class="font-bold text-white text-base">Guía de Grabación</h2>
-                    <p class="text-xs text-slate-400">Prototipo 100% interactivo</p>
-                </div>
-            </div>
-            <ol class="text-xs space-y-3 text-slate-300 list-decimal list-inside leading-relaxed">
-                <li><strong class="text-white">Login:</strong> Haz clic en "Iniciar Sesión" (datos pre-rellenados).</li>
-                <li><strong class="text-white">Mapa y Rutas:</strong> Toca los pines del mapa o selecciona una ruta abajo.</li>
-                <li><strong class="text-white">Mi Perfil:</strong> Botón arriba a la derecha o barra inferior. Edita datos, revisa tu XP/Historial y configura tu <span class="text-rose-400 font-semibold">Contacto de Emergencia</span> privado.</li>
-                <li><strong class="text-white">Grupos:</strong> Entra a un grupo público, solicita unirte a uno por invitación (con botón de auto-aprobar para el demo) o <span class="text-emerald-400 font-semibold">Crea un Grupo</span> nuevo.</li>
-                <li><strong class="text-white">Chat y Salida:</strong> Escribe en el chat y presiona <span class="text-amber-400 font-semibold">"Iniciar Sendero"</span>.</li>
-                <li><strong class="text-white">Tiempo Real y SOS:</strong> En el sendero activo, usa el botón de <span class="text-rose-400 font-semibold">"Simular Exceso de Tiempo Límite"</span> para disparar la alerta automática al contacto de emergencia.</li>
-            </ol>
-            <button onclick="resetPrototype()" class="mt-6 w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-rotate-left"></i> Reiniciar Demo desde Cero
-            </button>
-        </div>
 
         <!-- MARCO DEL CELULAR -->
         <div class="phone-frame" id="phoneFrame">
@@ -1632,13 +1608,6 @@
 
             showToast("¡Cumbre completada! Sumado a tu historial");
             navigateTo('screen-profile');
-        }
-
-        function resetPrototype() {
-            if (trekTimerInterval) clearInterval(trekTimerInterval);
-            document.getElementById('modal-sos-triggered').classList.add('hidden');
-            navigateTo('screen-login');
-            showToast("Prototipo reiniciado al inicio");
         }
 
         // Inicializar vistas al cargar
