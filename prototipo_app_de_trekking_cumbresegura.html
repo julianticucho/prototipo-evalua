@@ -1262,14 +1262,14 @@
                 let actionBtn = '';
 
                 if (group.privacy === 'Público') {
-                    privacyBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-globe mr-1"></i>Público</span>`;
+                    privacyBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center whitespace-nowrap shrink-0"><i class="fa-solid fa-globe mr-1"></i>Público</span>`;
                     actionBtn = `
                         <button onclick="joinPublicGroup(${group.id})" class="w-full mt-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-right-to-bracket"></i> Unirse Directamente al Grupo
                         </button>
                     `;
                 } else if (group.privacy === 'Por Invitación') {
-                    privacyBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800"><i class="fa-solid fa-envelope-open-text mr-1"></i>Por Invitación</span>`;
+                    privacyBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 inline-flex items-center whitespace-nowrap shrink-0"><i class="fa-solid fa-envelope-open-text mr-1"></i>Por Invitación</span>`;
                     if (group.requestStatus === 'pending') {
                         actionBtn = `
                             <div class="mt-3 flex gap-2">
@@ -1289,7 +1289,7 @@
                         `;
                     }
                 } else {
-                    privacyBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700"><i class="fa-solid fa-lock mr-1"></i>Privado</span>`;
+                    privacyBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700 inline-flex items-center whitespace-nowrap shrink-0"><i class="fa-solid fa-lock mr-1"></i>Privado</span>`;
                     actionBtn = `
                         <button onclick="enterPrivateGroupWithDemo(${group.id})" class="w-full mt-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition">
                             <i class="fa-solid fa-key mr-1"></i> Grupo Privado (Ingresar con Código Demo)
@@ -1458,9 +1458,9 @@
             }
 
             const privacyBadges = {
-                'Público': `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-globe mr-1"></i>Público</span>`,
-                'Por Invitación': `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800"><i class="fa-solid fa-envelope-open-text mr-1"></i>Por Invitación</span>`,
-                'Privado': `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700"><i class="fa-solid fa-lock mr-1"></i>Privado</span>`
+                'Público': `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center whitespace-nowrap shrink-0"><i class="fa-solid fa-globe mr-1"></i>Público</span>`,
+                'Por Invitación': `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 inline-flex items-center whitespace-nowrap shrink-0"><i class="fa-solid fa-envelope-open-text mr-1"></i>Por Invitación</span>`,
+                'Privado': `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700 inline-flex items-center whitespace-nowrap shrink-0"><i class="fa-solid fa-lock mr-1"></i>Privado</span>`
             };
 
             myGroups.forEach(group => {
