@@ -597,6 +597,15 @@
                         </div>
                     </div>
 
+                    <!-- Etiquetas del grupo (selección múltiple, opcional) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Etiquetas del Grupo</label>
+                        <p class="text-[10px] text-slate-400 mb-2">Opcional • Ayudan a otros a encontrar un grupo a su medida</p>
+                        <div id="cgTagsContainer" class="flex flex-wrap gap-2">
+                            <!-- Dinámico por JS (renderCreateGroupTags) -->
+                        </div>
+                    </div>
+
                     <div class="pt-2">
                         <button type="submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-600/25 text-xs flex items-center justify-center gap-2 transition">
                             <i class="fa-solid fa-check"></i>
@@ -636,6 +645,7 @@
                             <span><i id="chatGroupWeatherIcon" class="fa-solid fa-sun text-amber-500 mr-1"></i>Clima: <strong id="chatGroupWeather">Soleado 22°C</strong></span>
                         </div>
                     </div>
+                    <div id="chatGroupTags"></div>
 
                     <!-- Botón para Iniciar el Sendero (Simular llegada del día/hora) -->
                     <button onclick="startActiveTrek()" class="mt-2.5 w-full py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-xs shadow flex items-center justify-center gap-2 transition">
@@ -1218,6 +1228,41 @@
         }
 
         // =========================================================================
+        // ETIQUETAS DE GRUPO
+        // =========================================================================
+        const groupTags = {
+            chill: { label: "Vamos de chill", icon: "fa-mug-hot", chipClass: "bg-sky-50 text-sky-700 border-sky-200", activeClass: "bg-sky-600 text-white border-sky-600" },
+            expertos: { label: "Solo experimentados", icon: "fa-mountain", chipClass: "bg-rose-50 text-rose-700 border-rose-200", activeClass: "bg-rose-600 text-white border-rose-600" },
+            fotos: { label: "Fotos", icon: "fa-camera", chipClass: "bg-violet-50 text-violet-700 border-violet-200", activeClass: "bg-violet-600 text-white border-violet-600" },
+            amigables: { label: "Amigables", icon: "fa-handshake", chipClass: "bg-emerald-50 text-emerald-700 border-emerald-200", activeClass: "bg-emerald-600 text-white border-emerald-600" },
+            tryhard: { label: "Tryhard", icon: "fa-fire", chipClass: "bg-amber-50 text-amber-700 border-amber-200", activeClass: "bg-amber-500 text-white border-amber-500" }
+        };
+
+        function renderTagChips(tags) {
+            if (!tags || tags.length === 0) return '';
+            return `
+                <div class="flex flex-wrap gap-1.5 mt-2">
+                    ${tags.map(id => {
+                        const t = groupTags[id];
+                        return t ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${t.chipClass} inline-flex items-center whitespace-nowrap"><i class="fa-solid ${t.icon} mr-1"></i>${t.label}</span>` : '';
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function renderCreateGroupTags() {
+            const container = document.getElementById('cgTagsContainer');
+            container.innerHTML = Object.entries(groupTags).map(([id, t]) => `
+                <label class="cursor-pointer">
+                    <input type="checkbox" name="cgTags" value="${id}" class="peer hidden">
+                    <span class="px-2.5 py-1.5 rounded-full text-[11px] font-bold border ${t.chipClass} inline-flex items-center gap-1 transition peer-checked:${t.activeClass.split(' ').join(' peer-checked:')}">
+                        <i class="fa-solid ${t.icon}"></i>${t.label}
+                    </span>
+                </label>
+            `).join('');
+        }
+
+        // =========================================================================
         // ESTADO EN MEMORIA DEL PROTOTIPO (100% Estático sin Base de Datos Externa)
         // =========================================================================
         const appState = {
@@ -1300,6 +1345,7 @@
                     minExp: "Intermedio",
                     timeLimitMinutes: 210, // 3h 30m
                     privacy: "Público",
+                    tags: ["chill", "fotos", "amigables"],
                     requestStatus: "joined", // none, pending, joined
                     messages: [
                         { sender: "Valentina Rojas", text: "¡Hola equipo! Nos juntamos en la entrada de Vía Agua del Palo a las 07:30 puntual.", time: "09:15", isMe: false },
@@ -1318,6 +1364,7 @@
                     minExp: "Avanzado",
                     timeLimitMinutes: 180, // 3h 00m
                     privacy: "Por Invitación",
+                    tags: ["tryhard", "fotos", "expertos"],
                     requestStatus: "none",
                     messages: [
                         { sender: "Lucas Fernández", text: "¡Bienvenidos al grupo por invitación! Mantendremos un ritmo constante de subida.", time: "10:00", isMe: false }
@@ -1335,6 +1382,7 @@
                     minExp: "Experto",
                     timeLimitMinutes: 150,
                     privacy: "Privado",
+                    tags: ["expertos", "tryhard"],
                     requestStatus: "none",
                     messages: [
                         { sender: "Camila Soto", text: "Salida interna del club con equipo técnico completo.", time: "08:30", isMe: false }
@@ -1352,6 +1400,7 @@
                     minExp: "Principiante",
                     timeLimitMinutes: 240,
                     privacy: "Público",
+                    tags: ["chill", "amigables"],
                     requestStatus: "none",
                     messages: [
                         { sender: "Andrés Castro", text: "¡Hola a todos! Recuerden comprar su entrada de Conaf/Parque antes de llegar.", time: "11:10", isMe: false }
@@ -1369,6 +1418,7 @@
                     minExp: "Avanzado",
                     timeLimitMinutes: 390,
                     privacy: "Por Invitación",
+                    tags: ["tryhard", "expertos"],
                     requestStatus: "none",
                     messages: [
                         { sender: "Tomás Aravena", text: "Obligatorio llevar mínimo 3 litros de agua y cortaviento.", time: "12:00", isMe: false }
@@ -1386,6 +1436,7 @@
                     minExp: "Principiante",
                     timeLimitMinutes: 180,
                     privacy: "Público",
+                    tags: ["amigables", "chill", "fotos"],
                     requestStatus: "none",
                     messages: [
                         { sender: "Sofía Herrera", text: "¡Ideal para quienes parten en el trekking! Nos vemos en el estacionamiento.", time: "14:20", isMe: false }
@@ -1563,6 +1614,7 @@
                         </div>
                         ${privacyBadge}
                     </div>
+                    ${renderTagChips(group.tags)}
 
                     <div class="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-600">
                         <div><i class="fa-regular fa-calendar text-emerald-600 mr-1.5"></i><strong>${group.date}</strong> • ${group.time}</div>
@@ -1639,6 +1691,7 @@
             const minExp = document.getElementById('cgMinExp').value;
             const timeLimitMinutes = parseInt(document.getElementById('cgTimeLimit').value, 10);
             const privacy = document.querySelector('input[name="cgPrivacy"]:checked').value;
+            const tags = Array.from(document.querySelectorAll('input[name="cgTags"]:checked')).map(cb => cb.value);
             const expectedWeather = getWeatherForDate(date);
 
             const newGroup = {
@@ -1653,6 +1706,7 @@
                 minExp,
                 timeLimitMinutes,
                 privacy,
+                tags,
                 weather: expectedWeather,
                 requestStatus: 'joined',
                 messages: [
@@ -1691,6 +1745,7 @@
             document.getElementById('chatGroupLimit').textContent = formatMinutes(group.timeLimitMinutes);
             document.getElementById('chatGroupWeather').textContent = `${weather.condition} ${weather.temp}`;
             document.getElementById('chatGroupWeatherIcon').className = `fa-solid ${weather.icon} ${weather.color} mr-1`;
+            document.getElementById('chatGroupTags').innerHTML = renderTagChips(group.tags);
 
             renderChatMessages(group);
             navigateTo('screen-group-chat');
@@ -1749,6 +1804,7 @@
                         </div>
                         ${privacyBadges[group.privacy] || ''}
                     </div>
+                    ${renderTagChips(group.tags)}
 
                     <div class="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-600">
                         <div><i class="fa-regular fa-calendar text-emerald-600 mr-1.5"></i><strong>${group.date}</strong> • ${group.time}</div>
@@ -2139,6 +2195,7 @@
             renderRoutesList();
             renderProfile();
             updateCreateGroupWeatherPreview();
+            renderCreateGroupTags();
         };
     </script>
 </body>
