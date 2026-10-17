@@ -476,6 +476,23 @@
 
                 <!-- Listado de Grupos Organizados -->
                 <div class="flex-1 overflow-y-auto no-scrollbar px-4 pt-2 pb-6">
+                    <!-- Buscador y filtros de grupos -->
+                    <div class="mb-3 space-y-2">
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-xs"></i>
+                                <input type="text" id="groupSearchInput" oninput="updateGroupSearch()" placeholder="Buscar grupo u organizador"
+                                    class="w-full pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <button id="groupFiltersToggle" onclick="toggleGroupFiltersPanel()" class="px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition">
+                                <!-- Dinámico por JS -->
+                            </button>
+                        </div>
+                        <div id="groupFiltersPanel" class="hidden bg-white border border-slate-200 rounded-2xl p-3 space-y-3 shadow-sm">
+                            <!-- Dinámico por JS -->
+                        </div>
+                    </div>
+
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Salidas Organizadas</h3>
                         <span id="routeGroupsCount" class="text-[11px] font-semibold text-slate-500">3 grupos</span>
@@ -1298,6 +1315,7 @@
             selectedRouteId: 1,
             activeGroupId: null,
             routeFilters: { query: '', difficulty: 'Todas' },
+            groupFilters: { query: '', tags: [], minExp: 'Cualquiera', timeLimit: 'Cualquiera', panelOpen: false },
             chatReturnScreen: 'screen-route-groups',
             routes: [
                 {
@@ -1626,6 +1644,7 @@
             document.getElementById('routeDetailTime').textContent = route.estTime;
             document.getElementById('routeDetailAlt').textContent = route.altitude;
 
+            resetGroupFilters();
             renderRouteGroups();
             navigateTo('screen-route-groups');
         }
@@ -1636,12 +1655,147 @@
             return `${h}h ${m > 0 ? m + 'm' : '00m'}`;
         }
 
+        // =========================================================================
+        // BUSCADOR Y FILTROS DE GRUPOS (etiquetas, nivel requerido, tiempo límite)
+        // =========================================================================
+        const timeLimitBuckets = {
+            'Cualquiera': { label: 'Cualquiera', test: () => true },
+            'le3': { label: '≤ 3h', test: m => m <= 180 },
+            '3to5': { label: '3–5h', test: m => m > 180 && m <= 300 },
+            'gt5': { label: '> 5h', test: m => m > 300 }
+        };
+
+        function resetGroupFilters() {
+            appState.groupFilters = { query: '', tags: [], minExp: 'Cualquiera', timeLimit: 'Cualquiera', panelOpen: false };
+            document.getElementById('groupSearchInput').value = '';
+        }
+
+        function countActiveGroupFilters() {
+            const f = appState.groupFilters;
+            return f.tags.length + (f.minExp !== 'Cualquiera' ? 1 : 0) + (f.timeLimit !== 'Cualquiera' ? 1 : 0);
+        }
+
+        function updateGroupSearch() {
+            appState.groupFilters.query = document.getElementById('groupSearchInput').value;
+            renderRouteGroups();
+        }
+
+        function toggleGroupFiltersPanel() {
+            appState.groupFilters.panelOpen = !appState.groupFilters.panelOpen;
+            renderRouteGroups();
+        }
+
+        function toggleGroupTagFilter(tagId) {
+            const tags = appState.groupFilters.tags;
+            appState.groupFilters.tags = tags.includes(tagId) ? tags.filter(t => t !== tagId) : [...tags, tagId];
+            renderRouteGroups();
+        }
+
+        function setGroupFilter(key, value) {
+            appState.groupFilters[key] = value;
+            renderRouteGroups();
+        }
+
+        function clearGroupFilters() {
+            const panelOpen = appState.groupFilters.panelOpen;
+            resetGroupFilters();
+            appState.groupFilters.panelOpen = panelOpen;
+            renderRouteGroups();
+        }
+
+        function renderGroupFiltersPanel() {
+            const f = appState.groupFilters;
+            const activeCount = countActiveGroupFilters();
+
+            const toggleBtn = document.getElementById('groupFiltersToggle');
+            toggleBtn.className = `px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition ${
+                f.panelOpen || activeCount > 0 ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300 hover:border-emerald-500'
+            }`;
+            toggleBtn.innerHTML = `
+                <i class="fa-solid fa-sliders"></i>Filtros
+                ${activeCount > 0 ? `<span class="w-4 h-4 rounded-full bg-white text-emerald-700 text-[10px] font-extrabold flex items-center justify-center">${activeCount}</span>` : ''}
+            `;
+
+            const panel = document.getElementById('groupFiltersPanel');
+            panel.classList.toggle('hidden', !f.panelOpen);
+            if (!f.panelOpen) return;
+
+            const chip = (active, onclick, content, activeCls = 'bg-emerald-600 text-white border-emerald-600', idleCls = 'bg-white text-slate-600 border-slate-200') =>
+                `<button onclick="${onclick}" class="px-2.5 py-1 rounded-full border text-[11px] font-bold whitespace-nowrap inline-flex items-center gap-1 transition ${active ? activeCls : idleCls}">${content}</button>`;
+
+            panel.innerHTML = `
+                <div>
+                    <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Etiquetas <span class="normal-case font-semibold text-slate-400">(al menos una)</span></span>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${Object.entries(groupTags).map(([id, t]) =>
+                            chip(f.tags.includes(id), `toggleGroupTagFilter('${id}')`, `<i class="fa-solid ${t.icon}"></i>${t.label}`, t.activeClass, t.chipClass)
+                        ).join('')}
+                    </div>
+                </div>
+                <div>
+                    <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Nivel de experiencia requerido</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${['Cualquiera', 'Principiante', 'Intermedio', 'Avanzado', 'Experto'].map(lvl =>
+                            chip(f.minExp === lvl, `setGroupFilter('minExp', '${lvl}')`, lvl)
+                        ).join('')}
+                    </div>
+                </div>
+                <div>
+                    <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Tiempo límite</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${Object.entries(timeLimitBuckets).map(([key, b]) =>
+                            chip(f.timeLimit === key, `setGroupFilter('timeLimit', '${key}')`, `<i class="fa-solid fa-stopwatch"></i>${b.label}`)
+                        ).join('')}
+                    </div>
+                </div>
+                ${activeCount > 0 ? `
+                <button onclick="clearGroupFilters()" class="w-full py-1.5 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition">
+                    <i class="fa-solid fa-rotate-left mr-1"></i>Limpiar filtros
+                </button>` : ''}
+            `;
+        }
+
         function renderRouteGroups() {
             const container = document.getElementById('groupsListContainer');
             container.innerHTML = '';
 
-            const routeGroups = appState.groups.filter(g => g.routeId === appState.selectedRouteId && g.privacy !== 'Privado');
-            document.getElementById('routeGroupsCount').textContent = `${routeGroups.length} grupos disponibles`;
+            renderGroupFiltersPanel();
+
+            const allRouteGroups = appState.groups.filter(g => g.routeId === appState.selectedRouteId && g.privacy !== 'Privado');
+            const f = appState.groupFilters;
+            const q = normalizeText(f.query.trim());
+            const routeGroups = allRouteGroups.filter(g => {
+                const matchesQuery = !q || normalizeText(g.title).includes(q) || normalizeText(g.organizer).includes(q);
+                const matchesTags = f.tags.length === 0 || (g.tags || []).some(t => f.tags.includes(t));
+                const matchesExp = f.minExp === 'Cualquiera' || g.minExp === f.minExp;
+                const matchesTime = timeLimitBuckets[f.timeLimit].test(g.timeLimitMinutes);
+                return matchesQuery && matchesTags && matchesExp && matchesTime;
+            });
+
+            document.getElementById('routeGroupsCount').textContent = routeGroups.length === allRouteGroups.length
+                ? `${allRouteGroups.length} grupos disponibles`
+                : `${routeGroups.length} de ${allRouteGroups.length} grupos`;
+
+            if (routeGroups.length === 0) {
+                const isFiltering = q || countActiveGroupFilters() > 0;
+                container.innerHTML = `
+                    <div class="bg-white p-5 rounded-2xl border border-dashed border-slate-300 text-center">
+                        <i class="fa-solid fa-users-slash text-2xl text-slate-300"></i>
+                        <h4 class="text-xs font-extrabold text-slate-800 mt-2">${isFiltering ? 'Ningún grupo coincide' : 'Aún no hay grupos para esta ruta'}</h4>
+                        <p class="text-[11px] text-slate-500 mt-0.5">${isFiltering ? 'Ajusta los filtros o crea tu propio grupo.' : '¡Sé el primero en organizar una salida!'}</p>
+                        <div class="mt-3 flex gap-2">
+                            ${isFiltering ? `
+                            <button onclick="clearGroupFilters()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+                                <i class="fa-solid fa-rotate-left mr-1"></i>Limpiar filtros
+                            </button>` : ''}
+                            <button onclick="openCreateGroupScreen()" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition">
+                                <i class="fa-solid fa-circle-plus mr-1"></i>Crear grupo
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
 
             routeGroups.forEach(group => {
                 const weather = group.weather || getWeatherForDate(group.date);
