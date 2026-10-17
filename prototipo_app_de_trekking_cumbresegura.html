@@ -206,11 +206,93 @@
                         <i class="fa-solid fa-arrow-right"></i>
                     </button>
                     <div class="text-center pt-1">
-                        <span class="text-xs text-slate-400">¿No tienes cuenta? <button onclick="handleLogin()" class="text-emerald-400 font-semibold underline">Regístrate gratis</button></span>
+                        <span class="text-xs text-slate-400">¿No tienes cuenta? <button onclick="navigateTo('screen-register')" class="text-emerald-400 font-semibold underline">Regístrate gratis</button></span>
                     </div>
                 </div>
 
                 <!-- Footer Login -->
+                <div class="relative z-10 text-center text-[11px] text-slate-400">
+                    Prototipo Interactivo • Santiago, Chile
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 PANTALLA 1B: REGISTRO
+                 ========================================== -->
+            <div id="screen-register" class="screen bg-slate-900 text-white justify-between p-7 pt-10">
+                <!-- Fondo decorativo de montaña -->
+                <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-35">
+                    <svg viewBox="0 0 400 800" class="w-full h-full object-cover">
+                        <defs>
+                            <linearGradient id="skyGradReg" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#064e3b"/>
+                                <stop offset="100%" stop-color="#0f172a"/>
+                            </linearGradient>
+                        </defs>
+                        <rect width="400" height="800" fill="url(#skyGradReg)"/>
+                        <circle cx="300" cy="150" r="45" fill="#10b981" opacity="0.3"/>
+                        <polygon points="-50,550 130,280 310,550" fill="#047857" opacity="0.5"/>
+                        <polygon points="100,600 280,240 460,600" fill="#065f46"/>
+                        <polygon points="-20,650 180,380 390,650" fill="#064e3b"/>
+                    </svg>
+                </div>
+
+                <!-- Header Registro -->
+                <div class="relative z-10 mt-4">
+                    <button onclick="navigateTo('screen-login')" class="w-9 h-9 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-200 hover:bg-slate-700 mb-4">
+                        <i class="fa-solid fa-arrow-left text-sm"></i>
+                    </button>
+                    <span class="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-semibold uppercase tracking-wider">
+                        Trekking Comunitario & SOS
+                    </span>
+                    <h1 class="text-2xl font-extrabold tracking-tight mt-3">Crea tu cuenta</h1>
+                    <p class="text-sm text-slate-300 mt-1">Completa tus datos para empezar a caminar seguro.</p>
+                </div>
+
+                <!-- Formulario Registro -->
+                <div class="relative z-10 bg-slate-800/90 backdrop-blur-md p-5 rounded-3xl border border-slate-700/80 shadow-xl space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nombre Completo</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-user absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                            <input type="text" id="regName" value="Martín Silva"
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Correo Electrónico</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-envelope absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                            <input type="email" id="regEmail" value="martin.silva@senderos.cl"
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Contraseña</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                            <input type="password" id="regPassword" value="••••••••••••"
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Confirmar Contraseña</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-key absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                            <input type="password" id="regPasswordConfirm" value="••••••••••••"
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <button onclick="navigateTo('screen-home')" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] text-slate-950 font-bold rounded-xl text-sm shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-2 mt-1">
+                        <span>Crear Cuenta</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                    <div class="text-center pt-1">
+                        <span class="text-xs text-slate-400">¿Ya tienes cuenta? <button onclick="navigateTo('screen-login')" class="text-emerald-400 font-semibold underline">Inicia sesión</button></span>
+                    </div>
+                </div>
+
+                <!-- Footer Registro -->
                 <div class="relative z-10 text-center text-[11px] text-slate-400">
                     Prototipo Interactivo • Santiago, Chile
                 </div>
@@ -1189,7 +1271,7 @@
 
             // Ajustar color de texto de la barra de estado según el fondo de la pantalla
             const statusBar = document.getElementById('statusBar');
-            if (screenId === 'screen-login' || screenId === 'screen-route-groups' || screenId === 'screen-active-trek') {
+            if (screenId === 'screen-login' || screenId === 'screen-register' || screenId === 'screen-route-groups' || screenId === 'screen-active-trek') {
                 statusBar.classList.remove('text-slate-800');
                 statusBar.classList.add('text-white');
             } else {
