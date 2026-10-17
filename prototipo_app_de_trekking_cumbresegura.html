@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CumbreSegura - Prototipo App Trekking</title>
+    <title>TrackingTrek - Prototipo App Trekking</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
@@ -172,14 +172,14 @@
                 </div>
 
                 <!-- Header Marca -->
-                <div class="relative z-10 mt-6">
-                    <div class="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30 mb-5">
-                        <i class="fa-solid fa-mountain-sun text-3xl text-white"></i>
-                    </div>
+                <div class="relative z-10 mt-6 flex flex-col items-center text-center">
+                    <!-- Imagen en la misma carpeta raíz -->
+                    <img src="/logo-trackingtreck.jpeg" alt="Logo TrackingTreck" class="w-20 h-20 rounded-2xl object-cover shadow-lg mb-3">
+                    
                     <span class="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-semibold uppercase tracking-wider">
                         Trekking Comunitario & SOS
                     </span>
-                    <h1 class="text-3xl font-extrabold tracking-tight mt-3">CumbreSegura</h1>
+                    <h1 class="text-3xl font-extrabold tracking-tight mt-3">TrackingTrek</h1>
                     <p class="text-sm text-slate-300 mt-1">Conecta con grupos de senderismo y camina con monitoreo de emergencia en tiempo real.</p>
                 </div>
 
@@ -1512,7 +1512,7 @@
                 requestStatus: 'joined',
                 messages: [
                     {
-                        sender: "Sistema CumbreSegura",
+                        sender: "Sistema TrackingTrek",
                         text: `Grupo "${title}" creado con éxito. Tiempo límite configurado: ${formatMinutes(timeLimitMinutes)}.`,
                         time: "Ahora",
                         isMe: false
@@ -1800,7 +1800,7 @@
         function buildWhatsAppConfirmLink() {
             const c = appState.user.emergencyContact;
             const digits = normalizePhoneForWhatsApp(c.phone);
-            const msg = `Hola ${c.name}, ${appState.user.name} te ha agregado como contacto de emergencia en CumbreSegura. Si recibes este mensaje, responde "OK" para confirmar que aceptas ser su contacto SOS.`;
+            const msg = `Hola ${c.name}, ${appState.user.name} te ha agregado como contacto de emergencia en TrackingTeck. Si recibes este mensaje, responde "OK" para confirmar que aceptas ser su contacto SOS.`;
             return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
         }
 
