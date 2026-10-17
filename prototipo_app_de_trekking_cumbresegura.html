@@ -174,7 +174,7 @@
                 <!-- Header Marca -->
                 <div class="relative z-10 mt-6 flex flex-col items-center text-center">
                     <!-- Imagen en la misma carpeta raíz -->
-                    <img src="logo-trackingtreck.jpeg" alt="Logo TrackingTreck" class="w-20 h-20 rounded-2xl object-cover shadow-lg mb-3">
+                    <img src="logo-trackingtreck.jpeg" onerror="this.src='https://placehold.co/80x80/10b981/0f172a?text=TT'" alt="Logo TrackingTreck" class="w-20 h-20 rounded-2xl object-cover shadow-lg mb-3">
                     
                     <span class="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-semibold uppercase tracking-wider">
                         Trekking Comunitario & SOS
@@ -312,7 +312,7 @@
                             Rutas en Cordillera
                         </h2>
                     </div>
-                    <!-- Botón Directo a Mi Perfil pedido en el prompt -->
+                    <!-- Botón Directo a Mi Perfil -->
                     <button onclick="navigateTo('screen-profile')" class="flex items-center gap-2 bg-slate-100 hover:bg-emerald-50 border border-slate-200 px-3 py-1.5 rounded-full transition">
                         <img id="homeUserAvatar" src="https://placehold.co/80x80/059669/ffffff?text=MS" alt="Avatar" class="w-7 h-7 rounded-full object-cover">
                         <div class="text-left">
@@ -501,7 +501,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Fecha de Salida</label>
-                            <input type="date" id="cgDate" required value="2026-10-18"
+                            <input type="date" id="cgDate" required value="2026-10-18" onchange="updateCreateGroupWeatherPreview()"
                                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-500">
                         </div>
                         <div>
@@ -509,6 +509,23 @@
                             <input type="time" id="cgTime" required value="08:00"
                                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-500">
                         </div>
+                    </div>
+
+                    <!-- NUEVO: Tarjeta de Clima Esperado para la fecha seleccionada -->
+                    <div id="cgWeatherBox" class="bg-sky-50 border border-sky-200 p-3 rounded-2xl flex items-center justify-between transition-all">
+                        <div class="flex items-center gap-3">
+                            <div id="cgWeatherIconWrap" class="w-10 h-10 rounded-xl bg-white border border-sky-100 flex items-center justify-center text-lg shadow-sm">
+                                <i id="cgWeatherIcon" class="fa-solid fa-sun text-amber-500"></i>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-700 block">Clima esperado para la fecha</span>
+                                <p id="cgWeatherDesc" class="text-xs font-extrabold text-slate-800">Soleado • 22°C</p>
+                                <p id="cgWeatherExtra" class="text-[10px] text-slate-500">Viento 12 km/h • UV Alto • 0% lluvia</p>
+                            </div>
+                        </div>
+                        <span id="cgWeatherSafetyBadge" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Óptimo
+                        </span>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
@@ -610,12 +627,13 @@
                         </div>
                     </div>
 
-                    <!-- Resumen de Reglas del Grupo y Participantes -->
-                    <div class="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                        <div class="flex items-center gap-3 text-slate-600">
+                    <!-- Resumen de Reglas del Grupo, Integrantes, Nivel, Límite y Clima Esperado -->
+                    <div class="mt-2.5 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-y-1 text-[10px]">
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-600">
                             <span><i class="fa-solid fa-users text-emerald-600 mr-1"></i><strong id="chatGroupMembersCount">4/8</strong></span>
                             <span><i class="fa-solid fa-medal text-amber-500 mr-1"></i>Mín: <strong id="chatGroupMinExp">Intermedio</strong></span>
                             <span><i class="fa-solid fa-stopwatch text-rose-500 mr-1"></i>Límite: <strong id="chatGroupLimit">4h 00m</strong></span>
+                            <span><i id="chatGroupWeatherIcon" class="fa-solid fa-sun text-amber-500 mr-1"></i>Clima: <strong id="chatGroupWeather">Soleado 22°C</strong></span>
                         </div>
                     </div>
 
@@ -1055,7 +1073,7 @@
                     <div class="mt-5 w-full bg-slate-900/90 border border-rose-500/50 rounded-2xl p-4 text-left space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="text-[10px] font-bold uppercase text-rose-400">Destinatario (Contacto Privado)</span>
-                            <span class="text-[10px] font-mono bg-rose-600/30 text-rose-200 px-2 py-0.5 rounded">Enviando SMS + Llamada</span>
+                            <span class="text-[10px] font-mono bg-rose-600/30 text-rose-200 px-2 py-0.5 rounded">Enviando mensaje</span>
                         </div>
                         <p id="sosModalContactName" class="text-sm font-extrabold text-white">Carolina Silva (Hermana)</p>
                         <p id="sosModalContactPhone" class="text-xs font-mono text-emerald-400">+56 9 8765 4321</p>
@@ -1081,6 +1099,122 @@
     </div>
 
     <script>
+        // =========================================================================
+        // SIMULADOR ESTÁTICO DE CLIMA ESPERADO SEGÚN LA FECHA
+        // =========================================================================
+        const staticWeatherCatalog = {
+            "2026-10-17": {
+                condition: "Despejado",
+                temp: "21°C",
+                icon: "fa-sun",
+                color: "text-amber-500",
+                extra: "Viento 10 km/h • UV Alto • 0% lluvia",
+                safety: "Óptimo",
+                safetyClass: "bg-emerald-100 text-emerald-800 border-emerald-200"
+            },
+            "2026-10-18": {
+                condition: "Soleado",
+                temp: "24°C",
+                icon: "fa-sun",
+                color: "text-amber-500",
+                extra: "Viento 12 km/h • UV Muy Alto • 0% lluvia",
+                safety: "Óptimo",
+                safetyClass: "bg-emerald-100 text-emerald-800 border-emerald-200"
+            },
+            "2026-10-19": {
+                condition: "Parcial Nublado",
+                temp: "18°C",
+                icon: "fa-cloud-sun",
+                color: "text-sky-500",
+                extra: "Viento 16 km/h • UV Moderado • 10% lluvia",
+                safety: "Bueno",
+                safetyClass: "bg-sky-100 text-sky-800 border-sky-200"
+            },
+            "2026-10-20": {
+                condition: "Nublado Fresco",
+                temp: "15°C",
+                icon: "fa-cloud",
+                color: "text-slate-500",
+                extra: "Viento 20 km/h • UV Bajo • 20% lluvia",
+                safety: "Precaución",
+                safetyClass: "bg-amber-100 text-amber-800 border-amber-200"
+            },
+            "2026-10-24": {
+                condition: "Viento en Cumbre",
+                temp: "12°C",
+                icon: "fa-wind",
+                color: "text-cyan-600",
+                extra: "Ráfagas 35 km/h • Llevar cortaviento",
+                safety: "Exigente",
+                safetyClass: "bg-amber-100 text-amber-800 border-amber-200"
+            }
+        };
+
+        function getWeatherForDate(dateStr) {
+            if (staticWeatherCatalog[dateStr]) {
+                return staticWeatherCatalog[dateStr];
+            }
+            // Fallback determinístico según el último dígito del día para cualquier otra fecha seleccionada
+            const dayNum = parseInt((dateStr || "2026-10-18").split("-")[2] || "18", 10);
+            const presets = [
+                {
+                    condition: "Soleado",
+                    temp: "23°C",
+                    icon: "fa-sun",
+                    color: "text-amber-500",
+                    extra: "Viento 11 km/h • UV Alto • 0% lluvia",
+                    safety: "Óptimo",
+                    safetyClass: "bg-emerald-100 text-emerald-800 border-emerald-200"
+                },
+                {
+                    condition: "Parcial Nublado",
+                    temp: "19°C",
+                    icon: "fa-cloud-sun",
+                    color: "text-sky-500",
+                    extra: "Viento 15 km/h • UV Moderado • 10% lluvia",
+                    safety: "Bueno",
+                    safetyClass: "bg-sky-100 text-sky-800 border-sky-200"
+                },
+                {
+                    condition: "Chubascos Débiles",
+                    temp: "11°C",
+                    icon: "fa-cloud-showers-heavy",
+                    color: "text-blue-600",
+                    extra: "Viento 28 km/h • 65% lluvia • Roca húmeda",
+                    safety: "Precaución",
+                    safetyClass: "bg-rose-100 text-rose-800 border-rose-200"
+                },
+                {
+                    condition: "Despejado Templado",
+                    temp: "20°C",
+                    icon: "fa-sun",
+                    color: "text-amber-500",
+                    extra: "Viento 9 km/h • UV Alto • 0% lluvia",
+                    safety: "Óptimo",
+                    safetyClass: "bg-emerald-100 text-emerald-800 border-emerald-200"
+                }
+            ];
+            return presets[dayNum % presets.length];
+        }
+
+        function updateCreateGroupWeatherPreview() {
+            const dateVal = document.getElementById('cgDate').value;
+            const w = getWeatherForDate(dateVal);
+
+            const iconEl = document.getElementById('cgWeatherIcon');
+            const descEl = document.getElementById('cgWeatherDesc');
+            const extraEl = document.getElementById('cgWeatherExtra');
+            const badgeEl = document.getElementById('cgWeatherSafetyBadge');
+
+            if (iconEl) iconEl.className = `fa-solid ${w.icon} ${w.color}`;
+            if (descEl) descEl.textContent = `${w.condition} • ${w.temp}`;
+            if (extraEl) extraEl.textContent = w.extra;
+            if (badgeEl) {
+                badgeEl.textContent = w.safety;
+                badgeEl.className = `text-[10px] font-bold px-2.5 py-1 rounded-full border ${w.safetyClass}`;
+            }
+        }
+
         // =========================================================================
         // ESTADO EN MEMORIA DEL PROTOTIPO (100% Estático sin Base de Datos Externa)
         // =========================================================================
@@ -1320,7 +1454,6 @@
             appState.routes.forEach(route => {
                 const groupsForRoute = appState.groups.filter(g => g.routeId === route.id).length;
                 const card = document.createElement('div');
-                card.onClick = () => openRouteDetail(route.id);
                 card.className = "bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-500 cursor-pointer transition flex items-center justify-between";
                 card.onclick = () => openRouteDetail(route.id);
 
@@ -1378,6 +1511,7 @@
             document.getElementById('routeGroupsCount').textContent = `${routeGroups.length} grupos disponibles`;
 
             routeGroups.forEach(group => {
+                const weather = group.weather || getWeatherForDate(group.date);
                 let privacyBadge = '';
                 let actionBtn = '';
 
@@ -1433,6 +1567,12 @@
                         <div><i class="fa-solid fa-users text-emerald-600 mr-1.5"></i>Cupos: <strong>${group.currentMembers}/${group.maxMembers}</strong></div>
                         <div><i class="fa-solid fa-medal text-amber-500 mr-1.5"></i>Mín: <strong>${group.minExp}</strong></div>
                         <div><i class="fa-solid fa-stopwatch text-rose-500 mr-1.5"></i>Límite: <strong>${formatMinutes(group.timeLimitMinutes)}</strong></div>
+                        <div class="col-span-2 bg-sky-50/80 border border-sky-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                            <span>
+                                <i class="fa-solid ${weather.icon} ${weather.color} mr-1.5"></i>Clima esperado: <strong class="text-slate-800">${weather.condition} (${weather.temp})</strong>
+                            </span>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${weather.safetyClass}">${weather.safety}</span>
+                        </div>
                     </div>
 
                     ${actionBtn}
@@ -1484,6 +1624,7 @@
         function openCreateGroupScreen() {
             const route = appState.routes.find(r => r.id === appState.selectedRouteId);
             document.getElementById('createGroupRouteSubtitle').textContent = `Ruta: ${route.name}`;
+            updateCreateGroupWeatherPreview();
             navigateTo('screen-create-group');
         }
 
@@ -1496,6 +1637,7 @@
             const minExp = document.getElementById('cgMinExp').value;
             const timeLimitMinutes = parseInt(document.getElementById('cgTimeLimit').value, 10);
             const privacy = document.querySelector('input[name="cgPrivacy"]:checked').value;
+            const expectedWeather = getWeatherForDate(date);
 
             const newGroup = {
                 id: Date.now(),
@@ -1509,11 +1651,12 @@
                 minExp,
                 timeLimitMinutes,
                 privacy,
+                weather: expectedWeather,
                 requestStatus: 'joined',
                 messages: [
                     {
                         sender: "Sistema TrackingTrek",
-                        text: `Grupo "${title}" creado con éxito. Tiempo límite configurado: ${formatMinutes(timeLimitMinutes)}.`,
+                        text: `Grupo "${title}" creado con éxito. Tiempo límite: ${formatMinutes(timeLimitMinutes)} • Clima esperado: ${expectedWeather.condition} (${expectedWeather.temp}).`,
                         time: "Ahora",
                         isMe: false
                     }
@@ -1535,6 +1678,7 @@
             const group = appState.groups.find(g => g.id === groupId);
             if (!group) return;
             const route = appState.routes.find(r => r.id === group.routeId);
+            const weather = group.weather || getWeatherForDate(group.date);
 
             appState.chatReturnScreen = returnScreen;
             document.getElementById('chatGroupName').textContent = group.title;
@@ -1543,6 +1687,8 @@
             document.getElementById('chatGroupMembersCount').textContent = `${group.currentMembers}/${group.maxMembers}`;
             document.getElementById('chatGroupMinExp').textContent = group.minExp;
             document.getElementById('chatGroupLimit').textContent = formatMinutes(group.timeLimitMinutes);
+            document.getElementById('chatGroupWeather').textContent = `${weather.condition} ${weather.temp}`;
+            document.getElementById('chatGroupWeatherIcon').className = `fa-solid ${weather.icon} ${weather.color} mr-1`;
 
             renderChatMessages(group);
             navigateTo('screen-group-chat');
@@ -1585,6 +1731,7 @@
 
             myGroups.forEach(group => {
                 const route = appState.routes.find(r => r.id === group.routeId);
+                const weather = group.weather || getWeatherForDate(group.date);
                 const lastMsg = group.messages[group.messages.length - 1];
                 const card = document.createElement('div');
                 card.className = "bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-500 cursor-pointer transition";
@@ -1604,6 +1751,14 @@
                     <div class="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-600">
                         <div><i class="fa-regular fa-calendar text-emerald-600 mr-1.5"></i><strong>${group.date}</strong> • ${group.time}</div>
                         <div><i class="fa-solid fa-users text-emerald-600 mr-1.5"></i>Cupos: <strong>${group.currentMembers}/${group.maxMembers}</strong></div>
+                        <div><i class="fa-solid fa-medal text-amber-500 mr-1.5"></i>Mín: <strong>${group.minExp}</strong></div>
+                        <div><i class="fa-solid fa-stopwatch text-rose-500 mr-1.5"></i>Límite: <strong>${formatMinutes(group.timeLimitMinutes)}</strong></div>
+                        <div class="col-span-2 bg-sky-50/80 border border-sky-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                            <span>
+                                <i class="fa-solid ${weather.icon} ${weather.color} mr-1.5"></i>Clima esperado: <strong class="text-slate-800">${weather.condition} (${weather.temp})</strong>
+                            </span>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${weather.safetyClass}">${weather.safety}</span>
+                        </div>
                     </div>
 
                     ${lastMsg ? `
@@ -1981,6 +2136,7 @@
         window.onload = () => {
             renderRoutesList();
             renderProfile();
+            updateCreateGroupWeatherPreview();
         };
     </script>
 </body>
