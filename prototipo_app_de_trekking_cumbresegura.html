@@ -351,7 +351,7 @@
 
                     <!-- Pines Interactivos sobre el Mapa -->
                     <!-- Pin 1: Manquehue -->
-                    <button onclick="openRouteDetail(1)" class="absolute top-[42px] left-[112px] group focus:outline-none pin-active">
+                    <button onclick="openRouteDetail(1)" data-route-pin="1" class="absolute top-[42px] left-[112px] group focus:outline-none pin-active transition-opacity">
                         <div class="bg-emerald-600 text-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 text-[11px] font-bold border-2 border-white hover:scale-110 transition">
                             <i class="fa-solid fa-person-hiking"></i>
                             <span>C° Manquehue</span>
@@ -360,7 +360,7 @@
                     </button>
 
                     <!-- Pin 2: Aguas de Ramón -->
-                    <button onclick="openRouteDetail(2)" class="absolute top-[135px] left-[220px] group focus:outline-none">
+                    <button onclick="openRouteDetail(2)" data-route-pin="2" class="absolute top-[135px] left-[220px] group focus:outline-none transition-opacity">
                         <div class="bg-amber-500 text-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 text-[11px] font-bold border-2 border-white hover:scale-110 transition">
                             <i class="fa-solid fa-water"></i>
                             <span>Aguas de Ramón</span>
@@ -369,7 +369,7 @@
                     </button>
 
                     <!-- Pin 3: Cerro Provincia -->
-                    <button onclick="openRouteDetail(3)" class="absolute top-[40px] left-[265px] group focus:outline-none">
+                    <button onclick="openRouteDetail(3)" data-route-pin="3" class="absolute top-[40px] left-[265px] group focus:outline-none transition-opacity">
                         <div class="bg-rose-600 text-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 text-[11px] font-bold border-2 border-white hover:scale-110 transition">
                             <i class="fa-solid fa-mountain"></i>
                             <span>C° Provincia</span>
@@ -378,7 +378,7 @@
                     </button>
 
                     <!-- Pin 4: Quebrada de Macul -->
-                    <button onclick="openRouteDetail(4)" class="absolute top-[195px] left-[55px] group focus:outline-none">
+                    <button onclick="openRouteDetail(4)" data-route-pin="4" class="absolute top-[195px] left-[55px] group focus:outline-none transition-opacity">
                         <div class="bg-blue-600 text-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 text-[11px] font-bold border-2 border-white hover:scale-110 transition">
                             <i class="fa-solid fa-tree"></i>
                             <span>Q. de Macul</span>
@@ -394,9 +394,21 @@
 
                 <!-- Lista de Selector de Rutas -->
                 <div class="flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-20">
+                    <!-- Buscador y filtro de rutas -->
+                    <div class="mb-3 space-y-2">
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" id="routeSearchInput" oninput="updateRouteFilters()" placeholder="Buscar ruta o sector (ej: Macul, La Reina)"
+                                class="w-full pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div id="routeDifficultyChips" class="flex gap-1.5 overflow-x-auto no-scrollbar">
+                            <!-- Dinámico por JS -->
+                        </div>
+                    </div>
+
                     <div class="flex items-center justify-between mb-2.5">
                         <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Selector de Rutas Disponibles</h3>
-                        <span class="text-[11px] font-semibold text-emerald-600">4 senderos activos</span>
+                        <span id="routesCountLabel" class="text-[11px] font-semibold text-emerald-600">4 senderos activos</span>
                     </div>
                     <div id="routesListContainer" class="space-y-2.5">
                         <!-- Renderizado dinámicamente por JS -->
@@ -1285,6 +1297,7 @@
             },
             selectedRouteId: 1,
             activeGroupId: null,
+            routeFilters: { query: '', difficulty: 'Todas' },
             chatReturnScreen: 'screen-route-groups',
             routes: [
                 {
@@ -1493,9 +1506,76 @@
         // =========================================================================
         // PANTALLA HOME Y SELECTOR DE RUTAS
         // =========================================================================
+        // Normaliza texto para buscar sin importar mayúsculas ni tildes ("ramon" encuentra "Ramón")
+        function normalizeText(str) {
+            return (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        }
+
+        function updateRouteFilters() {
+            appState.routeFilters.query = document.getElementById('routeSearchInput').value;
+            renderRoutesList();
+        }
+
+        function setRouteDifficultyFilter(difficulty) {
+            appState.routeFilters.difficulty = difficulty;
+            renderRoutesList();
+        }
+
+        function clearRouteFilters() {
+            appState.routeFilters = { query: '', difficulty: 'Todas' };
+            document.getElementById('routeSearchInput').value = '';
+            renderRoutesList();
+        }
+
+        function renderRouteDifficultyChips() {
+            const options = ['Todas', 'Principiante', 'Intermedio', 'Avanzado'];
+            document.getElementById('routeDifficultyChips').innerHTML = options.map(opt => {
+                const active = appState.routeFilters.difficulty === opt;
+                const cls = active
+                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-500';
+                return `<button onclick="setRouteDifficultyFilter('${opt}')" class="px-3 py-1 rounded-full border text-[11px] font-bold whitespace-nowrap transition ${cls}">${opt}</button>`;
+            }).join('');
+        }
+
         function renderRoutesList() {
             const container = document.getElementById('routesListContainer');
             container.innerHTML = '';
+
+            const { query, difficulty } = appState.routeFilters;
+            const q = normalizeText(query.trim());
+            const filteredRoutes = appState.routes.filter(route => {
+                const matchesQuery = !q || normalizeText(route.name).includes(q) || normalizeText(route.sector).includes(q);
+                const matchesDifficulty = difficulty === 'Todas' || route.difficulty === difficulty;
+                return matchesQuery && matchesDifficulty;
+            });
+
+            renderRouteDifficultyChips();
+
+            // Atenuar en el mapa los pines de rutas que no coinciden con el filtro
+            document.querySelectorAll('[data-route-pin]').forEach(pin => {
+                const visible = filteredRoutes.some(r => r.id === parseInt(pin.dataset.routePin, 10));
+                pin.classList.toggle('opacity-25', !visible);
+            });
+
+            const total = appState.routes.length;
+            document.getElementById('routesCountLabel').textContent = filteredRoutes.length === total
+                ? `${total} senderos activos`
+                : `${filteredRoutes.length} de ${total} senderos`;
+
+            if (filteredRoutes.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-5 rounded-2xl border border-dashed border-slate-300 text-center">
+                        <i class="fa-solid fa-magnifying-glass-location text-2xl text-slate-300"></i>
+                        <h4 class="text-xs font-extrabold text-slate-800 mt-2">No hay rutas que coincidan</h4>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Prueba con otro nombre, sector o dificultad.</p>
+                        <button onclick="clearRouteFilters()" class="mt-3 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition">
+                            <i class="fa-solid fa-rotate-left mr-1"></i>Limpiar filtros
+                        </button>
+                    </div>
+                `;
+                return;
+            }
 
             const colorClasses = {
                 emerald: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -1504,7 +1584,7 @@
                 blue: 'bg-blue-100 text-blue-800 border-blue-200'
             };
 
-            appState.routes.forEach(route => {
+            filteredRoutes.forEach(route => {
                 const groupsForRoute = appState.groups.filter(g => g.routeId === route.id && g.privacy !== 'Privado').length;
                 const card = document.createElement('div');
                 card.className = "bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-500 cursor-pointer transition flex items-center justify-between";
