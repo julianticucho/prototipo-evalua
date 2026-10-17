@@ -1452,7 +1452,7 @@
             };
 
             appState.routes.forEach(route => {
-                const groupsForRoute = appState.groups.filter(g => g.routeId === route.id).length;
+                const groupsForRoute = appState.groups.filter(g => g.routeId === route.id && g.privacy !== 'Privado').length;
                 const card = document.createElement('div');
                 card.className = "bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-500 cursor-pointer transition flex items-center justify-between";
                 card.onclick = () => openRouteDetail(route.id);
@@ -1507,7 +1507,7 @@
             const container = document.getElementById('groupsListContainer');
             container.innerHTML = '';
 
-            const routeGroups = appState.groups.filter(g => g.routeId === appState.selectedRouteId);
+            const routeGroups = appState.groups.filter(g => g.routeId === appState.selectedRouteId && g.privacy !== 'Privado');
             document.getElementById('routeGroupsCount').textContent = `${routeGroups.length} grupos disponibles`;
 
             routeGroups.forEach(group => {
