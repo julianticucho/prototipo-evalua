@@ -466,16 +466,51 @@
                     </div>
                 </div>
 
-                <!-- Botón Principal: Crear un grupo para esta ruta -->
-                <div class="px-4 pt-3.5 pb-2">
-                    <button onclick="openCreateGroupScreen()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold rounded-2xl shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 text-xs transition">
+                <!-- Acciones: Crear grupo + Ver calendario -->
+                <div class="px-4 pt-3.5 pb-2 flex gap-2">
+                    <button onclick="openCreateGroupScreen()" class="flex-1 py-3 px-3 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold rounded-2xl shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 text-xs transition">
                         <i class="fa-solid fa-circle-plus text-base"></i>
-                        <span>Crear un grupo para esta ruta</span>
+                        <span>Crear grupo</span>
+                    </button>
+                    <button id="calendarToggleBtn" onclick="toggleGroupsCalendar()" class="px-3.5 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm flex items-center justify-center gap-2 text-xs transition">
+                        <i class="fa-regular fa-calendar-days text-emerald-600 text-base"></i>
+                        <span>Calendario</span>
                     </button>
                 </div>
 
                 <!-- Listado de Grupos Organizados -->
                 <div class="flex-1 overflow-y-auto no-scrollbar px-4 pt-2 pb-6">
+                    <!-- Panel Calendario del mes (días agendados) -->
+                    <div id="groupsCalendarPanel" class="hidden mb-3 bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div>
+                                <h4 class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-calendar-check text-emerald-600"></i>
+                                    <span id="calendarMonthLabel">Octubre 2026</span>
+                                </h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">Días con punto = salidas agendadas. Toca un día para filtrar.</p>
+                            </div>
+                            <button onclick="clearCalendarDateFilter()" id="calendarClearBtn" class="hidden text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-full transition">
+                                Ver todas
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-7 gap-0.5 mb-1">
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">L</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">M</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">X</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">J</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">V</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">S</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">D</span>
+                        </div>
+                        <div id="groupsCalendarGrid" class="grid grid-cols-7 gap-0.5">
+                            <!-- Dinámico por JS -->
+                        </div>
+                        <div id="calendarSelectedHint" class="mt-2.5 pt-2 border-t border-slate-100 text-[11px] text-slate-500 font-medium">
+                            Selecciona un día con salidas para revisarlas abajo.
+                        </div>
+                    </div>
+
                     <!-- Buscador y filtros de grupos -->
                     <div class="mb-3 space-y-2">
                         <div class="flex gap-2">
@@ -494,7 +529,7 @@
                     </div>
 
                     <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Salidas Organizadas</h3>
+                        <h3 id="routeGroupsHeading" class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Salidas Organizadas</h3>
                         <span id="routeGroupsCount" class="text-[11px] font-semibold text-slate-500">3 grupos</span>
                     </div>
                     <div id="groupsListContainer" class="space-y-3">
@@ -719,14 +754,53 @@
                     <button onclick="navigateTo('screen-home')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
                         <i class="fa-solid fa-arrow-left text-xs"></i>
                     </button>
-                    <div class="flex-1">
+                    <div class="flex-1 min-w-0">
                         <h2 class="text-sm font-extrabold text-slate-800">Mis Grupos</h2>
                         <p id="myGroupsCount" class="text-[11px] text-emerald-600 font-semibold">0 grupos</p>
                     </div>
+                    <button id="myGroupsCalendarToggleBtn" onclick="toggleMyGroupsCalendar()" class="px-3 py-2 bg-slate-50 hover:bg-emerald-50 border border-slate-200 text-slate-700 font-bold rounded-xl flex items-center gap-1.5 text-xs transition shrink-0">
+                        <i class="fa-regular fa-calendar-days text-emerald-600"></i>
+                        <span>Agenda</span>
+                    </button>
                 </div>
 
                 <!-- Listado de grupos a los que pertenezco -->
                 <div class="flex-1 overflow-y-auto no-scrollbar p-4 pb-20">
+                    <!-- Calendario: mis salidas agendadas -->
+                    <div id="myGroupsCalendarPanel" class="hidden mb-3 bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div>
+                                <h4 class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-calendar-check text-emerald-600"></i>
+                                    <span id="myGroupsCalendarMonthLabel">Octubre 2026</span>
+                                </h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">Tus salidas agendadas. Toca un día para revisarlas.</p>
+                            </div>
+                            <button onclick="clearMyGroupsCalendarDate()" id="myGroupsCalendarClearBtn" class="hidden text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-full transition">
+                                Ver todas
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-7 gap-0.5 mb-1">
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">L</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">M</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">X</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">J</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">V</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">S</span>
+                            <span class="text-center text-[9px] font-bold text-slate-400 py-1">D</span>
+                        </div>
+                        <div id="myGroupsCalendarGrid" class="grid grid-cols-7 gap-0.5">
+                            <!-- Dinámico por JS -->
+                        </div>
+                        <div id="myGroupsCalendarHint" class="mt-2.5 pt-2 border-t border-slate-100 text-[11px] text-slate-500 font-medium">
+                            Selecciona un día con salidas para verlas abajo.
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between mb-2" id="myGroupsListHeader">
+                        <h3 id="myGroupsHeading" class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Mis salidas</h3>
+                        <span id="myGroupsFilteredCount" class="text-[11px] font-semibold text-slate-500"></span>
+                    </div>
                     <div id="myGroupsListContainer" class="space-y-3">
                         <!-- Dinámico por JS -->
                     </div>
@@ -1355,7 +1429,8 @@
             selectedRouteId: 1,
             activeGroupId: null,
             routeFilters: { query: '', difficulty: 'Todas' },
-            groupFilters: { query: '', tags: [], minExp: 'Cualquiera', timeLimit: 'Cualquiera', panelOpen: false },
+            groupFilters: { query: '', tags: [], minExp: 'Cualquiera', timeLimit: 'Cualquiera', panelOpen: false, calendarOpen: false, selectedDate: null },
+            myGroupsCalendar: { open: false, selectedDate: null },
             chatReturnScreen: 'screen-route-groups',
             routes: [
                 {
@@ -1706,8 +1781,11 @@
         };
 
         function resetGroupFilters() {
-            appState.groupFilters = { query: '', tags: [], minExp: 'Cualquiera', timeLimit: 'Cualquiera', panelOpen: false };
+            appState.groupFilters = { query: '', tags: [], minExp: 'Cualquiera', timeLimit: 'Cualquiera', panelOpen: false, calendarOpen: false, selectedDate: null };
             document.getElementById('groupSearchInput').value = '';
+            const calPanel = document.getElementById('groupsCalendarPanel');
+            if (calPanel) calPanel.classList.add('hidden');
+            updateCalendarToggleBtn();
         }
 
         function countActiveGroupFilters() {
@@ -1738,9 +1816,179 @@
 
         function clearGroupFilters() {
             const panelOpen = appState.groupFilters.panelOpen;
+            const calendarOpen = appState.groupFilters.calendarOpen;
             resetGroupFilters();
             appState.groupFilters.panelOpen = panelOpen;
+            appState.groupFilters.calendarOpen = calendarOpen;
+            const calPanel = document.getElementById('groupsCalendarPanel');
+            if (calPanel) calPanel.classList.toggle('hidden', !calendarOpen);
+            updateCalendarToggleBtn();
             renderRouteGroups();
+        }
+
+        // =========================================================================
+        // CALENDARIO MENSUAL DE SALIDAS (días agendados + filtro por fecha)
+        // =========================================================================
+        const monthNamesEs = [
+            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ];
+
+        function formatDateLabel(dateStr) {
+            if (!dateStr) return '';
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            const weekday = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][dt.getDay()];
+            return `${weekday} ${d} de ${monthNamesEs[m - 1]}`;
+        }
+
+        function getVisibleRouteGroups() {
+            return appState.groups.filter(g => g.routeId === appState.selectedRouteId && g.privacy !== 'Privado');
+        }
+
+        function getScheduledDatesForRoute() {
+            const counts = {};
+            getVisibleRouteGroups().forEach(g => {
+                if (!g.date) return;
+                counts[g.date] = (counts[g.date] || 0) + 1;
+            });
+            return counts;
+        }
+
+        function updateCalendarToggleBtn() {
+            const btn = document.getElementById('calendarToggleBtn');
+            if (!btn) return;
+            const open = appState.groupFilters.calendarOpen;
+            const hasDate = !!appState.groupFilters.selectedDate;
+            btn.className = `px-3.5 py-3 font-bold rounded-2xl shadow-sm flex items-center justify-center gap-2 text-xs transition ${
+                open || hasDate
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600'
+                    : 'bg-white hover:bg-slate-50 border border-slate-200 text-slate-700'
+            }`;
+            btn.innerHTML = open
+                ? `<i class="fa-solid fa-calendar-xmark text-base"></i><span>Cerrar</span>`
+                : `<i class="fa-regular fa-calendar-days ${hasDate ? '' : 'text-emerald-600'} text-base"></i><span>Calendario</span>`;
+        }
+
+        function toggleGroupsCalendar() {
+            appState.groupFilters.calendarOpen = !appState.groupFilters.calendarOpen;
+            const panel = document.getElementById('groupsCalendarPanel');
+            if (panel) panel.classList.toggle('hidden', !appState.groupFilters.calendarOpen);
+            updateCalendarToggleBtn();
+            if (appState.groupFilters.calendarOpen) renderGroupsCalendar();
+        }
+
+        function selectCalendarDate(dateStr) {
+            const counts = getScheduledDatesForRoute();
+            if (!counts[dateStr]) {
+                showToast('No hay salidas agendadas ese día', 'fa-calendar text-amber-400');
+                return;
+            }
+            // Toggle: si ya está seleccionado, limpia el filtro
+            if (appState.groupFilters.selectedDate === dateStr) {
+                appState.groupFilters.selectedDate = null;
+            } else {
+                appState.groupFilters.selectedDate = dateStr;
+            }
+            renderGroupsCalendar();
+            renderRouteGroups();
+            updateCalendarToggleBtn();
+        }
+
+        function clearCalendarDateFilter() {
+            appState.groupFilters.selectedDate = null;
+            renderGroupsCalendar();
+            renderRouteGroups();
+            updateCalendarToggleBtn();
+        }
+
+        function renderGroupsCalendar() {
+            const grid = document.getElementById('groupsCalendarGrid');
+            const label = document.getElementById('calendarMonthLabel');
+            const hint = document.getElementById('calendarSelectedHint');
+            const clearBtn = document.getElementById('calendarClearBtn');
+            if (!grid) return;
+
+            // Mes actual (o mes de la fecha seleccionada / primera salida si el mes no tiene datos de demo)
+            const now = new Date();
+            let year = now.getFullYear();
+            let month = now.getMonth(); // 0-indexed
+
+            const scheduled = getScheduledDatesForRoute();
+            const scheduledKeys = Object.keys(scheduled).sort();
+            if (scheduledKeys.length > 0) {
+                const hasInCurrentMonth = scheduledKeys.some(d => {
+                    const [y, m] = d.split('-').map(Number);
+                    return y === year && m === month + 1;
+                });
+                if (!hasInCurrentMonth) {
+                    const [y, m] = scheduledKeys[0].split('-').map(Number);
+                    year = y;
+                    month = m - 1;
+                }
+            }
+
+            label.textContent = `${monthNamesEs[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1);
+            // Lunes = 0 ... Domingo = 6
+            let startWeekday = firstDay.getDay() - 1;
+            if (startWeekday < 0) startWeekday = 6;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const selected = appState.groupFilters.selectedDate;
+
+            let html = '';
+            for (let i = 0; i < startWeekday; i++) {
+                html += `<div class="aspect-square"></div>`;
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const count = scheduled[dateStr] || 0;
+                const isToday = dateStr === todayStr;
+                const isSelected = dateStr === selected;
+                const hasEvents = count > 0;
+
+                let cellCls = 'aspect-square rounded-xl flex flex-col items-center justify-center text-[11px] font-bold transition relative';
+                if (isSelected) {
+                    cellCls += ' bg-emerald-600 text-white shadow-md';
+                } else if (hasEvents) {
+                    cellCls += ' bg-emerald-50 text-emerald-800 hover:bg-emerald-100 cursor-pointer border border-emerald-200';
+                } else if (isToday) {
+                    cellCls += ' bg-slate-100 text-slate-700 border border-slate-300';
+                } else {
+                    cellCls += ' text-slate-400';
+                }
+
+                const onclick = hasEvents ? `onclick="selectCalendarDate('${dateStr}')"` : '';
+                html += `
+                    <button type="button" ${onclick} class="${cellCls}" ${hasEvents ? '' : 'disabled'}>
+                        <span>${day}</span>
+                        ${hasEvents ? `<span class="mt-0.5 flex gap-0.5">${Array.from({ length: Math.min(count, 3) }).map(() =>
+                            `<span class="w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-emerald-500'}"></span>`
+                        ).join('')}</span>` : (isToday && !isSelected ? '<span class="mt-0.5 w-1 h-1 rounded-full bg-slate-400"></span>' : '<span class="mt-0.5 h-1"></span>')}
+                    </button>
+                `;
+            }
+
+            grid.innerHTML = html;
+
+            if (clearBtn) clearBtn.classList.toggle('hidden', !selected);
+
+            if (hint) {
+                if (selected) {
+                    const n = scheduled[selected] || 0;
+                    hint.innerHTML = `<span class="text-emerald-700 font-bold">${formatDateLabel(selected)}</span> · ${n} ${n === 1 ? 'salida' : 'salidas'} abajo`;
+                } else {
+                    const totalDays = Object.keys(scheduled).length;
+                    hint.textContent = totalDays > 0
+                        ? `${totalDays} ${totalDays === 1 ? 'día con salidas' : 'días con salidas'} este mes. Toca uno para filtrar.`
+                        : 'No hay salidas agendadas este mes. Crea un grupo para marcar el calendario.';
+                }
+            }
+
+            updateCalendarToggleBtn();
         }
 
         function renderGroupFiltersPanel() {
@@ -1800,8 +2048,9 @@
             container.innerHTML = '';
 
             renderGroupFiltersPanel();
+            if (appState.groupFilters.calendarOpen) renderGroupsCalendar();
 
-            const allRouteGroups = appState.groups.filter(g => g.routeId === appState.selectedRouteId && g.privacy !== 'Privado');
+            const allRouteGroups = getVisibleRouteGroups();
             const f = appState.groupFilters;
             const q = normalizeText(f.query.trim());
             const routeGroups = allRouteGroups.filter(g => {
@@ -1809,20 +2058,32 @@
                 const matchesTags = f.tags.length === 0 || (g.tags || []).some(t => f.tags.includes(t));
                 const matchesExp = f.minExp === 'Cualquiera' || g.minExp === f.minExp;
                 const matchesTime = timeLimitBuckets[f.timeLimit].test(g.timeLimitMinutes);
-                return matchesQuery && matchesTags && matchesExp && matchesTime;
+                const matchesDate = !f.selectedDate || g.date === f.selectedDate;
+                return matchesQuery && matchesTags && matchesExp && matchesTime && matchesDate;
+            }).sort((a, b) => {
+                const byDate = (a.date || '').localeCompare(b.date || '');
+                if (byDate !== 0) return byDate;
+                return (a.time || '').localeCompare(b.time || '');
             });
 
-            document.getElementById('routeGroupsCount').textContent = routeGroups.length === allRouteGroups.length
+            const heading = document.getElementById('routeGroupsHeading');
+            if (heading) {
+                heading.textContent = f.selectedDate
+                    ? `Salidas · ${formatDateLabel(f.selectedDate)}`
+                    : 'Salidas Organizadas';
+            }
+
+            document.getElementById('routeGroupsCount').textContent = routeGroups.length === allRouteGroups.length && !f.selectedDate
                 ? `${allRouteGroups.length} grupos disponibles`
                 : `${routeGroups.length} de ${allRouteGroups.length} grupos`;
 
             if (routeGroups.length === 0) {
-                const isFiltering = q || countActiveGroupFilters() > 0;
+                const isFiltering = q || countActiveGroupFilters() > 0 || !!f.selectedDate;
                 container.innerHTML = `
                     <div class="bg-white p-5 rounded-2xl border border-dashed border-slate-300 text-center">
                         <i class="fa-solid fa-users-slash text-2xl text-slate-300"></i>
                         <h4 class="text-xs font-extrabold text-slate-800 mt-2">${isFiltering ? 'Ningún grupo coincide' : 'Aún no hay grupos para esta ruta'}</h4>
-                        <p class="text-[11px] text-slate-500 mt-0.5">${isFiltering ? 'Ajusta los filtros o crea tu propio grupo.' : '¡Sé el primero en organizar una salida!'}</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">${isFiltering ? 'Ajusta los filtros o el día del calendario.' : '¡Sé el primero en organizar una salida!'}</p>
                         <div class="mt-3 flex gap-2">
                             ${isFiltering ? `
                             <button onclick="clearGroupFilters()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
@@ -2114,19 +2375,186 @@
         }
 
         // =========================================================================
-        // MIS GRUPOS (LISTA DE GRUPOS A LOS QUE PERTENEZCO)
+        // MIS GRUPOS (LISTA DE GRUPOS A LOS QUE PERTENEZCO) + AGENDA PERSONAL
         // =========================================================================
+        function getJoinedGroups() {
+            return appState.groups.filter(g => g.requestStatus === 'joined');
+        }
+
+        function getMyScheduledDates() {
+            const counts = {};
+            getJoinedGroups().forEach(g => {
+                if (!g.date) return;
+                counts[g.date] = (counts[g.date] || 0) + 1;
+            });
+            return counts;
+        }
+
+        function updateMyGroupsCalendarToggleBtn() {
+            const btn = document.getElementById('myGroupsCalendarToggleBtn');
+            if (!btn) return;
+            const { open, selectedDate } = appState.myGroupsCalendar;
+            btn.className = `px-3 py-2 font-bold rounded-xl flex items-center gap-1.5 text-xs transition shrink-0 ${
+                open || selectedDate
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600'
+                    : 'bg-slate-50 hover:bg-emerald-50 border border-slate-200 text-slate-700'
+            }`;
+            btn.innerHTML = open
+                ? `<i class="fa-solid fa-calendar-xmark"></i><span>Cerrar</span>`
+                : `<i class="fa-regular fa-calendar-days ${selectedDate ? '' : 'text-emerald-600'}"></i><span>Agenda</span>`;
+        }
+
+        function toggleMyGroupsCalendar() {
+            appState.myGroupsCalendar.open = !appState.myGroupsCalendar.open;
+            const panel = document.getElementById('myGroupsCalendarPanel');
+            if (panel) panel.classList.toggle('hidden', !appState.myGroupsCalendar.open);
+            updateMyGroupsCalendarToggleBtn();
+            if (appState.myGroupsCalendar.open) renderMyGroupsCalendar();
+        }
+
+        function selectMyGroupsCalendarDate(dateStr) {
+            const counts = getMyScheduledDates();
+            if (!counts[dateStr]) {
+                showToast('No tienes salidas ese día', 'fa-calendar text-amber-400');
+                return;
+            }
+            if (appState.myGroupsCalendar.selectedDate === dateStr) {
+                appState.myGroupsCalendar.selectedDate = null;
+            } else {
+                appState.myGroupsCalendar.selectedDate = dateStr;
+            }
+            renderMyGroups();
+        }
+
+        function clearMyGroupsCalendarDate() {
+            appState.myGroupsCalendar.selectedDate = null;
+            renderMyGroups();
+        }
+
+        function renderMyGroupsCalendar() {
+            const grid = document.getElementById('myGroupsCalendarGrid');
+            const label = document.getElementById('myGroupsCalendarMonthLabel');
+            const hint = document.getElementById('myGroupsCalendarHint');
+            const clearBtn = document.getElementById('myGroupsCalendarClearBtn');
+            if (!grid) return;
+
+            const now = new Date();
+            let year = now.getFullYear();
+            let month = now.getMonth();
+
+            const scheduled = getMyScheduledDates();
+            const scheduledKeys = Object.keys(scheduled).sort();
+            if (scheduledKeys.length > 0) {
+                const hasInCurrentMonth = scheduledKeys.some(d => {
+                    const [y, m] = d.split('-').map(Number);
+                    return y === year && m === month + 1;
+                });
+                if (!hasInCurrentMonth) {
+                    const [y, m] = scheduledKeys[0].split('-').map(Number);
+                    year = y;
+                    month = m - 1;
+                }
+            }
+
+            label.textContent = `${monthNamesEs[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1);
+            let startWeekday = firstDay.getDay() - 1;
+            if (startWeekday < 0) startWeekday = 6;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const selected = appState.myGroupsCalendar.selectedDate;
+
+            let html = '';
+            for (let i = 0; i < startWeekday; i++) {
+                html += `<div class="aspect-square"></div>`;
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const count = scheduled[dateStr] || 0;
+                const isToday = dateStr === todayStr;
+                const isSelected = dateStr === selected;
+                const hasEvents = count > 0;
+
+                let cellCls = 'aspect-square rounded-xl flex flex-col items-center justify-center text-[11px] font-bold transition relative';
+                if (isSelected) {
+                    cellCls += ' bg-emerald-600 text-white shadow-md';
+                } else if (hasEvents) {
+                    cellCls += ' bg-emerald-50 text-emerald-800 hover:bg-emerald-100 cursor-pointer border border-emerald-200';
+                } else if (isToday) {
+                    cellCls += ' bg-slate-100 text-slate-700 border border-slate-300';
+                } else {
+                    cellCls += ' text-slate-400';
+                }
+
+                const onclick = hasEvents ? `onclick="selectMyGroupsCalendarDate('${dateStr}')"` : '';
+                html += `
+                    <button type="button" ${onclick} class="${cellCls}" ${hasEvents ? '' : 'disabled'}>
+                        <span>${day}</span>
+                        ${hasEvents ? `<span class="mt-0.5 flex gap-0.5">${Array.from({ length: Math.min(count, 3) }).map(() =>
+                            `<span class="w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-emerald-500'}"></span>`
+                        ).join('')}</span>` : (isToday && !isSelected ? '<span class="mt-0.5 w-1 h-1 rounded-full bg-slate-400"></span>' : '<span class="mt-0.5 h-1"></span>')}
+                    </button>
+                `;
+            }
+
+            grid.innerHTML = html;
+            if (clearBtn) clearBtn.classList.toggle('hidden', !selected);
+
+            if (hint) {
+                if (selected) {
+                    const n = scheduled[selected] || 0;
+                    hint.innerHTML = `<span class="text-emerald-700 font-bold">${formatDateLabel(selected)}</span> · ${n} ${n === 1 ? 'salida tuya' : 'salidas tuyas'} abajo`;
+                } else {
+                    const totalDays = Object.keys(scheduled).length;
+                    hint.textContent = totalDays > 0
+                        ? `${totalDays} ${totalDays === 1 ? 'día con salidas tuyas' : 'días con salidas tuyas'}. Toca uno para filtrar.`
+                        : 'Aún no tienes salidas agendadas. Únete o crea un grupo.';
+                }
+            }
+
+            updateMyGroupsCalendarToggleBtn();
+        }
+
         function openMyGroupsScreen() {
             navigateTo('screen-my-groups');
         }
 
         function renderMyGroups() {
             const container = document.getElementById('myGroupsListContainer');
-            const myGroups = appState.groups.filter(g => g.requestStatus === 'joined');
-            document.getElementById('myGroupsCount').textContent = `${myGroups.length} ${myGroups.length === 1 ? 'grupo' : 'grupos'}`;
+            const allMyGroups = getJoinedGroups();
+            const selectedDate = appState.myGroupsCalendar.selectedDate;
+            const myGroups = allMyGroups
+                .filter(g => !selectedDate || g.date === selectedDate)
+                .sort((a, b) => {
+                    const byDate = (a.date || '').localeCompare(b.date || '');
+                    if (byDate !== 0) return byDate;
+                    return (a.time || '').localeCompare(b.time || '');
+                });
+
+            document.getElementById('myGroupsCount').textContent = `${allMyGroups.length} ${allMyGroups.length === 1 ? 'grupo' : 'grupos'}`;
             container.innerHTML = '';
 
-            if (myGroups.length === 0) {
+            const panel = document.getElementById('myGroupsCalendarPanel');
+            if (panel) panel.classList.toggle('hidden', !appState.myGroupsCalendar.open);
+            if (appState.myGroupsCalendar.open) renderMyGroupsCalendar();
+            else updateMyGroupsCalendarToggleBtn();
+
+            const heading = document.getElementById('myGroupsHeading');
+            const filteredCount = document.getElementById('myGroupsFilteredCount');
+            if (heading) {
+                heading.textContent = selectedDate
+                    ? `Salidas · ${formatDateLabel(selectedDate)}`
+                    : 'Mis salidas';
+            }
+            if (filteredCount) {
+                filteredCount.textContent = selectedDate
+                    ? `${myGroups.length} de ${allMyGroups.length}`
+                    : (allMyGroups.length > 0 ? `${allMyGroups.length} agendada${allMyGroups.length === 1 ? '' : 's'}` : '');
+            }
+
+            if (allMyGroups.length === 0) {
                 container.innerHTML = `
                     <div class="bg-white p-6 rounded-3xl border border-dashed border-slate-300 text-center">
                         <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
@@ -2136,6 +2564,20 @@
                         <p class="text-xs text-slate-500 mt-1 leading-relaxed">Únete a una salida organizada o crea un grupo desde el mapa para verlo aquí.</p>
                         <button onclick="navigateTo('screen-home')" class="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition">
                             <i class="fa-solid fa-map-location-dot mr-1.5"></i>Explorar Rutas
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (myGroups.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-5 rounded-2xl border border-dashed border-slate-300 text-center">
+                        <i class="fa-regular fa-calendar-xmark text-2xl text-slate-300"></i>
+                        <h4 class="text-xs font-extrabold text-slate-800 mt-2">Sin salidas ese día</h4>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Elige otro día del calendario o vuelve a ver todas.</p>
+                        <button onclick="clearMyGroupsCalendarDate()" class="mt-3 w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-xs transition">
+                            <i class="fa-solid fa-rotate-left mr-1"></i>Ver todas mis salidas
                         </button>
                     </div>
                 `;
