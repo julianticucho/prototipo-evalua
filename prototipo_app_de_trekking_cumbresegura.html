@@ -663,6 +663,18 @@
                                 <p id="chatGroupMeta" class="text-[10px] text-slate-500 font-medium">C° Manquehue • Sáb 18 Oct, 08:00 hrs</p>
                             </div>
                         </div>
+
+                        <!-- Menú de opciones del grupo (salir / eliminar) -->
+                        <div id="chatGroupMenuWrap" class="relative">
+                            <button onclick="toggleChatGroupMenu()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition">
+                                <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                            </button>
+                            <div id="chatGroupMenu" class="hidden absolute right-0 top-10 w-44 bg-white border border-slate-200 rounded-2xl shadow-lg p-1.5 z-20">
+                                <button id="chatGroupMenuAction" onclick="openGroupActionModal()" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 transition">
+                                    <!-- Dinámico por JS (Salir / Eliminar según rol) -->
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Resumen de Reglas del Grupo, Integrantes, Nivel, Límite y Clima Esperado -->
@@ -1128,6 +1140,34 @@
                     <button onclick="cancelEmergencyAlert()" class="w-full py-3 bg-white text-rose-900 font-extrabold rounded-2xl text-xs shadow-lg hover:bg-rose-50 transition">
                         Estoy Bien (Cancelar Alerta con PIN)
                     </button>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 MODAL 4: CONFIRMAR SALIR / ELIMINAR GRUPO
+                 ========================================== -->
+            <div id="modal-group-action" class="hidden absolute inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-end justify-center">
+                <div class="bg-white w-full rounded-t-3xl p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div id="groupActionIconWrap" class="w-9 h-9 rounded-xl flex items-center justify-center">
+                                <i id="groupActionIcon" class="fa-solid"></i>
+                            </div>
+                            <h3 id="groupActionTitle" class="text-sm font-extrabold text-slate-800">Salir del grupo</h3>
+                        </div>
+                        <button onclick="closeGroupActionModal()" class="text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <p id="groupActionText" class="text-xs text-slate-600 leading-relaxed"></p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="closeGroupActionModal()" class="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+                            Cancelar
+                        </button>
+                        <button id="groupActionConfirmBtn" onclick="confirmGroupAction()" class="py-3 text-white font-bold rounded-xl text-xs shadow transition">
+                            Confirmar
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1873,6 +1913,7 @@
             const group = appState.groups.find(g => g.id === groupId);
             if (!group) return;
             group.requestStatus = 'joined';
+            group.currentMembers++;
             appState.activeGroupId = groupId;
             document.getElementById('navGroupBadge').classList.remove('hidden');
             showToast("Te has unido al grupo público");
@@ -1891,6 +1932,7 @@
             const group = appState.groups.find(g => g.id === groupId);
             if (!group) return;
             group.requestStatus = 'joined';
+            group.currentMembers++;
             appState.activeGroupId = groupId;
             document.getElementById('navGroupBadge').classList.remove('hidden');
             showToast("¡Organizador aceptó tu invitación!");
@@ -1943,6 +1985,7 @@
                 tags,
                 weather: expectedWeather,
                 requestStatus: 'joined',
+                isOwner: true,
                 messages: [
                     {
                         sender: "Sistema TrackingTrek",
@@ -1981,8 +2024,93 @@
             document.getElementById('chatGroupWeatherIcon').className = `fa-solid ${weather.icon} ${weather.color} mr-1`;
             document.getElementById('chatGroupTags').innerHTML = renderTagChips(group.tags);
 
+            const menuAction = document.getElementById('chatGroupMenuAction');
+            menuAction.className = `w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 transition ${
+                group.isOwner ? 'text-rose-600 hover:bg-rose-50' : 'text-slate-700 hover:bg-slate-100'
+            }`;
+            menuAction.innerHTML = group.isOwner
+                ? '<i class="fa-solid fa-trash-can"></i>Eliminar grupo'
+                : '<i class="fa-solid fa-right-from-bracket"></i>Salir del grupo';
+
             renderChatMessages(group);
             navigateTo('screen-group-chat');
+        }
+
+        // =========================================================================
+        // SALIR DEL GRUPO (MIEMBRO) O ELIMINARLO (ORGANIZADOR)
+        // =========================================================================
+        function toggleChatGroupMenu(show) {
+            const menu = document.getElementById('chatGroupMenu');
+            menu.classList.toggle('hidden', show === undefined ? !menu.classList.contains('hidden') : !show);
+        }
+
+        // Cerrar el menú al tocar fuera de él
+        document.addEventListener('click', e => {
+            const wrap = document.getElementById('chatGroupMenuWrap');
+            if (wrap && !wrap.contains(e.target)) toggleChatGroupMenu(false);
+        });
+
+        function openGroupActionModal() {
+            const group = appState.groups.find(g => g.id === appState.activeGroupId);
+            if (!group) return;
+            toggleChatGroupMenu(false);
+
+            const iconWrap = document.getElementById('groupActionIconWrap');
+            const icon = document.getElementById('groupActionIcon');
+            const confirmBtn = document.getElementById('groupActionConfirmBtn');
+
+            if (group.isOwner) {
+                const others = group.currentMembers - 1;
+                iconWrap.className = 'w-9 h-9 rounded-xl flex items-center justify-center bg-rose-100 text-rose-600';
+                icon.className = 'fa-solid fa-trash-can';
+                document.getElementById('groupActionTitle').textContent = 'Eliminar grupo';
+                document.getElementById('groupActionText').innerHTML = `¿Eliminar <strong>${group.title}</strong>? ${
+                    others > 0 ? `Se avisará a los ${others} ${others === 1 ? 'miembro' : 'miembros'} y se` : 'Se'
+                } borrará el chat. Esta acción no se puede deshacer.`;
+                confirmBtn.className = 'py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs shadow transition';
+                confirmBtn.textContent = 'Eliminar grupo';
+            } else {
+                iconWrap.className = 'w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 text-slate-700';
+                icon.className = 'fa-solid fa-right-from-bracket';
+                document.getElementById('groupActionTitle').textContent = 'Salir del grupo';
+                document.getElementById('groupActionText').innerHTML = `¿Salir de <strong>${group.title}</strong>? Dejarás de ver el chat y no recibirás avisos de la salida.`;
+                confirmBtn.className = 'py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs shadow transition';
+                confirmBtn.textContent = 'Salir del grupo';
+            }
+
+            document.getElementById('modal-group-action').classList.remove('hidden');
+        }
+
+        function closeGroupActionModal() {
+            document.getElementById('modal-group-action').classList.add('hidden');
+        }
+
+        function confirmGroupAction() {
+            const group = appState.groups.find(g => g.id === appState.activeGroupId);
+            if (!group) return;
+
+            // Si había un sendero en curso con este grupo, se detiene el monitoreo
+            if (trekTimerInterval) {
+                clearInterval(trekTimerInterval);
+                trekTimerInterval = null;
+            }
+
+            if (group.isOwner) {
+                appState.groups = appState.groups.filter(g => g.id !== group.id);
+                showToast("Grupo eliminado • se notificó a los miembros", "fa-trash-can text-rose-400");
+            } else {
+                group.requestStatus = 'none';
+                group.currentMembers = Math.max(0, group.currentMembers - 1);
+                showToast("Saliste del grupo", "fa-right-from-bracket text-slate-300");
+            }
+
+            appState.activeGroupId = null;
+            const hasGroups = appState.groups.some(g => g.requestStatus === 'joined');
+            document.getElementById('navGroupBadge').classList.toggle('hidden', !hasGroups);
+
+            closeGroupActionModal();
+            renderRouteGroups();
+            openMyGroupsScreen();
         }
 
         // =========================================================================
@@ -2034,6 +2162,7 @@
                     <div class="flex items-start justify-between gap-2">
                         <div>
                             <h4 class="text-xs font-extrabold text-slate-800">${group.title}</h4>
+                            ${group.isOwner ? `<span class="inline-flex items-center mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-white"><i class="fa-solid fa-crown text-amber-400 mr-1"></i>Organizas tú</span>` : ''}
                             <p class="text-[11px] text-slate-500"><i class="fa-solid fa-route text-emerald-600 mr-1"></i>${route ? route.name : 'Ruta'} • Organiza: <strong class="text-slate-700">${group.organizer}</strong></p>
                         </div>
                         ${privacyBadges[group.privacy] || ''}
